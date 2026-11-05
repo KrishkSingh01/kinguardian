@@ -1,0 +1,41 @@
+.checkin-manager { margin-top: 20px; }
+.checkin-form { display: grid; gap: 17px; margin-bottom: 20px; border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 22px; background: var(--surface); }
+.checkin-form[hidden] { display: none; }
+.checkin-form-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.checkin-form-heading .eyebrow { margin-bottom: 4px; }
+.checkin-form-heading h3 { margin: 0; font-size: 1.12rem; }
+.checkin-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.checkin-form .text-control { width: 100%; min-height: 44px; border: 1px solid var(--line-strong); border-radius: 10px; padding: 0 12px; background: var(--surface-raised); color: var(--ink); font: inherit; }
+.checkin-form .text-control:focus-visible, .checkin-form .select-control:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.checkin-form .field-help { margin: 5px 0 0; color: var(--ink-muted); font-size: .72rem; }
+.checkin-reminder { display: flex; min-height: 44px; align-items: flex-start; gap: 10px; padding-top: 4px; cursor: pointer; }
+.checkin-reminder input, .checkin-recipient-option input { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--forest); }
+.checkin-reminder strong, .checkin-reminder small { display: block; }
+.checkin-reminder strong { font-size: .78rem; }
+.checkin-reminder small { margin-top: 3px; color: var(--ink-muted); font-size: .7rem; }
+.checkin-recipient-fieldset { min-width: 0; margin: 0; border: 1px solid var(--line); border-radius: 13px; padding: 14px; }
+.checkin-recipient-fieldset legend { padding: 0 5px; color: var(--ink); font-size: .76rem; font-weight: 700; }
+.checkin-recipient-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; }
+.checkin-recipient-option { display: flex; min-height: 46px; align-items: center; gap: 9px; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; color: var(--ink-soft); font-size: .75rem; cursor: pointer; }
+.checkin-recipient-option:has(input:checked) { border-color: var(--forest); background: var(--forest-mist); color: var(--ink); }
+.checkin-form-actions { display: flex; justify-content: flex-end; gap: 9px; }
+.checkin-list { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.checkin-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 15px; align-items: center; border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 18px 20px; background: var(--surface); }
+.checkin-item-copy { min-width: 0; }
+.checkin-item time { color: var(--ink); font-size: .98rem; font-weight: 700; }
+.checkin-item-meta { margin: 5px 0 0; color: var(--ink-muted); font-size: .73rem; overflow-wrap: anywhere; }
+.checkin-item-status { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; border-radius: 99px; padding: 5px 9px; background: var(--forest-mist); color: var(--forest); font-size: .67rem; font-weight: 700; }
+.checkin-item-status[data-status="overdue"] { background: var(--coral-pale); color: var(--coral-text); }
+.checkin-item-status[data-status="cancelled"] { background: var(--surface-soft); color: var(--ink-muted); }
+.checkin-item-status[data-status="safe"] { background: var(--forest-mist); color: var(--forest); }
+.checkin-item-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+.checkin-item-actions .button { min-height: 37px; padding: 0 11px; font-size: .69rem; }
+.checkin-item[hidden], .checkin-manager .empty-state[hidden] { display: none; }
+.checkin-item .checkin-countdown { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+@media (max-width: 680px) {
+  .checkin-form { padding: 17px; }
+  .checkin-fields, .checkin-recipient-options { grid-template-columns: 1fr; }
+  .checkin-item { grid-template-columns: 1fr; padding: 16px; }
+  .checkin-item-actions { justify-content: flex-start; }
+  .checkin-item-actions .button { flex: 1 1 auto; }
+}

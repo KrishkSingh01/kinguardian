@@ -1,0 +1,91 @@
+:root {
+  color-scheme: light;
+  --ink: #192420;
+  --ink-soft: #59635c;
+  --ink-muted: #646e66;
+  --paper: #f3f2ec;
+  --surface: #fffefa;
+  --surface-raised: #ffffff;
+  --surface-soft: #e9ebe2;
+  --line: #e2e4dc;
+  --line-strong: #718074;
+  --focus-ring: #58750f;
+  --forest: #143d33;
+  --forest-deep: #102d27;
+  --forest-mist: #e6eee6;
+  --lime: #d7ee76;
+  --lime-deep: #a5c939;
+  --coral: #e76f5b;
+  --coral-hover: #d85c49;
+  --coral-text: #a83d30;
+  --coral-ink: #192420;
+  --coral-pale: #fae9e3;
+  --amber: #bd8850;
+  --shadow: 0 24px 70px rgba(32, 43, 37, .09);
+  --shadow-small: 0 8px 24px rgba(32, 43, 37, .06);
+  --radius-xl: 28px;
+  --radius-lg: 21px;
+  --radius-md: 15px;
+  --radius-sm: 11px;
+  --font-body: "Segoe UI", system-ui, sans-serif;
+  --font-display: "Segoe UI", system-ui, sans-serif;
+  --ease-out: cubic-bezier(.2, .75, .25, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="system"] {
+    color-scheme: dark;
+    --ink: #e8eee7;
+    --ink-soft: #b5bfb6;
+    --ink-muted: #8b9a8e;
+    --paper: #111a17;
+    --surface: #1a2520;
+    --surface-raised: #202d27;
+    --surface-soft: #24332a;
+    --line: #2b3930;
+    --line-strong: #657568;
+    --focus-ring: #bdd965;
+    --forest: #cce8d1;
+    --forest-deep: #142b22;
+    --forest-mist: #25352b;
+    --lime: #d7ee76;
+    --lime-deep: #bdd965;
+    --coral: #f08772;
+    --coral-hover: #fa9a86;
+    --coral-text: #f08772;
+    --coral-ink: #192420;
+    --coral-pale: #442c27;
+    --amber: #d6a46d;
+    --shadow: 0 24px 70px rgba(0, 0, 0, .28);
+    --shadow-small: 0 8px 24px rgba(0, 0, 0, .18);
+  }
+  :root[data-theme="system"] .avatar-you { color: #1e3128; }
+  :root[data-theme="system"] .button-dark { color: #183127; }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ink: #e8eee7;
+  --ink-soft: #b5bfb6;
+  --ink-muted: #8b9a8e;
+  --paper: #111a17;
+  --surface: #1a2520;
+  --surface-raised: #202d27;
+  --surface-soft: #24332a;
+  --line: #2b3930;
+  --line-strong: #657568;
+  --focus-ring: #bdd965;
+  --forest: #cce8d1;
+  --forest-deep: #142b22;
+  --forest-mist: #25352b;
+  --lime: #d7ee76;
+  --lime-deep: #bdd965;
+  --coral: #f08772;
+  --coral-hover: #fa9a86;
+  --coral-text: #f08772;
+  --coral-ink: #192420;
+  --coral-pale: #442c27;
+  --amber: #d6a46d;
+  --shadow: 0 24px 70px rgba(0, 0, 0, .28);
+  --shadow-small: 0 8px 24px rgba(0, 0, 0, .18);
+}

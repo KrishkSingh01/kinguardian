@@ -1,0 +1,14 @@
+name = "kinguardian-checkin-cron"
+main = "scheduled-checkins.js"
+compatibility_date = "2026-11-05"
+
+[triggers]
+crons = ["*/1 * * * *"]
+
+
+[[d1_databases]]
+binding = "DB"
+database_name = "kinguardian-db"
+# Keep this the same UUID used in the Pages wrangler.toml after database creation.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "../migrations"

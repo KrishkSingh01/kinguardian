@@ -1,0 +1,8 @@
+.invite-page { width: min(100% - 32px, 620px); min-height: 100vh; display: flex; flex-direction: column; justify-content: center; margin: 0 auto; padding: 32px 0; }
+.invite-card { margin-top: 25px; border: 1px solid var(--line); border-radius: var(--radius-lg); padding: clamp(22px, 5vw, 38px); background: var(--surface); box-shadow: var(--shadow-small); }
+.invite-card > .eyebrow { margin-bottom: 7px; }
+.invite-card h1 { margin-bottom: 10px; font-size: clamp(1.8rem, 5vw, 2.45rem); }
+.invite-card > p:not(.eyebrow) { margin-bottom: 17px; font-size: .78rem; }
+.invite-card .field-hint { display: block; margin-top: 18px; }
+.invite-decision > p { margin: 18px 0 0; font-size: .78rem; }
+.invite-page > .contacts-footer { margin-top: 14px; }

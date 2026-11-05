@@ -1,0 +1,90 @@
+@media (min-width: 1500px) { .content-wrap { padding-right: 70px; padding-left: 70px; } }
+@media (max-width: 1160px) {
+  .sidebar { width: 222px; padding-right: 15px; padding-left: 15px; }
+  .main-area { margin-left: 222px; }
+  .hero-card { padding: 29px 25px; }
+  .hero-art { width: 33%; }
+  .ring-a { width: 152px; height: 152px; }.ring-b { width: 116px; height: 116px; }.ring-c { width: 86px; height: 86px; }
+  .home-lower-grid { grid-template-columns: 1fr; }
+  .promise-card { min-height: 180px; }
+}
+@media (max-width: 850px) {
+  .sidebar { width: 76px; align-items: center; padding: 24px 9px 14px; }
+  .brand-name, .preview-tag, .nav-label, .nav-item span, .sidebar-bottom { display: none; }
+  .brand-mark { width: 42px; height: 42px; }
+  .nav-list { width: 100%; margin-top: 41px; }
+  .nav-item { width: 52px; height: 48px; justify-content: center; padding: 0; }
+  .nav-item svg { width: 21px; height: 21px; }
+  .main-area { margin-left: 76px; }
+  .welcome-grid { grid-template-columns: minmax(0, 1.4fr) minmax(220px, .8fr); }
+  .hero-art { opacity: .62; }
+  .hero-content { width: 70%; }
+  .hero-card h2 { font-size: 1.95rem; }
+}
+@media (max-width: 680px) {
+  body { font-size: 14px; }
+  .sidebar { display: none; }
+  .main-area { margin-left: 0; }
+  .mobile-header { position: sticky; z-index: 4; top: 0; display: flex; height: 60px; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--line); padding: 0 18px; background: color-mix(in srgb, var(--surface) 93%, transparent); backdrop-filter: blur(15px); }
+  .mobile-header .brand-name { display: inline; font-size: 1.02rem; }
+  .mobile-header .brand-mark { width: 34px; height: 34px; border-radius: 11px 11px 11px 4px; }
+  .mobile-header .brand-mark svg { width: 24px; height: 24px; }
+  .content-wrap { padding: 25px 17px 102px; }
+  .page-topline { align-items: flex-start; margin-bottom: 20px; }
+  .page-topline .eyebrow { font-size: .57rem; }
+  .page-topline h1 { max-width: 250px; font-size: 1.42rem; }
+  .top-actions { display: none; }
+  .preview-notice { align-items: flex-start; margin-bottom: 14px; padding: 10px; }
+  .preview-notice p { font-size: .7rem; }
+  .welcome-grid { grid-template-columns: 1fr; gap: 13px; }
+  .hero-card { min-height: 330px; border-radius: 24px; padding: 25px 20px; }
+  .hero-content { width: 100%; }
+  .hero-card h2 { font-size: clamp(1.85rem, 8vw, 2.22rem); }
+  .hero-card .hero-content > p:not(.hero-footnote) { max-width: 300px; font-size: .78rem; }
+  .hero-art { top: auto; right: -29px; bottom: 4px; width: 142px; height: 142px; opacity: .2; }
+  .ring-a { width: 137px; height: 137px; }.ring-b { width: 103px; height: 103px; }.ring-c { width: 75px; height: 75px; }
+  .art-core { width: 58px; height: 58px; border-radius: 21px 21px 21px 6px; }
+  .art-core svg { width: 43px; height: 43px; }
+  .art-caption { display: none; }
+  .checkin-card { min-height: 265px; border-radius: 21px; padding: 18px; }
+  .checkin-illustration { height: 91px; margin: 2px 0 0; }
+  .checkin-sun { top: 17px; }.checkin-arc { top: 40px; }
+  .section-heading { margin: 31px 0 13px; }
+  .section-heading h2 { font-size: 1.35rem; }
+  .heading-link { font-size: .7rem; white-space: nowrap; }
+  .empty-circle-card { min-height: auto; gap: 13px; padding: 19px 15px; }
+  .avatar-orbit { width: 101px; height: 101px; }
+  .orbit-line { inset: 8px; }
+  .orbit-avatar { width: 31px; height: 31px; border-width: 2px; }
+  .avatar-one { top: 2px; left: 36px; }.avatar-two { right: 0; bottom: 24px; }.avatar-three { bottom: 0; left: 33px; }
+  .empty-circle-copy h3 { font-size: .98rem; }
+  .empty-circle-copy p { font-size: .72rem; }
+  .empty-circle-copy .button { min-height: 38px; padding: 0 10px; font-size: .68rem; }
+  .promise-card { min-height: 187px; }
+  .site-footer { flex-wrap: wrap; padding-top: 22px; font-size: .67rem; }
+  .site-footer > span:last-child { width: 100%; }
+  .mobile-nav { position: fixed; z-index: 8; inset: auto 0 0; display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); padding: 8px 8px max(8px, env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--surface) 96%, transparent); backdrop-filter: blur(18px); }
+  .mobile-nav-item { display: grid; min-height: 50px; justify-items: center; align-content: center; gap: 3px; border: 0; border-radius: 11px; background: transparent; color: var(--ink-muted); cursor: pointer; }
+  .mobile-nav-item svg { width: 20px; height: 20px; }
+  .mobile-nav-item span { font-size: .62rem; font-weight: 600; }
+  .mobile-nav-item.is-active { color: var(--forest); }
+  .page-intro-row { align-items: flex-start; flex-direction: column; gap: 14px; }
+  .page-intro-row > .button { align-self: stretch; }
+  .circle-choice-grid, .settings-grid { grid-template-columns: 1fr; gap: 12px; }
+  .choice-card { min-height: 225px; padding: 18px; }
+  .empty-state { min-height: 215px; }
+  .checkin-explainer { align-items: flex-start; flex-wrap: wrap; gap: 14px; padding: 18px; }
+  .checkin-big-icon { width: 55px; height: 55px; border-radius: 17px; }
+  .checkin-big-icon svg { width: 34px; height: 34px; }
+  .checkin-explainer > div:nth-child(2) { min-width: calc(100% - 72px); }
+  .checkin-explainer > .button { width: 100%; }
+  .app-dialog { padding: 23px 20px; }
+}
+@media (max-width: 390px) {
+  .content-wrap { padding-right: 13px; padding-left: 13px; }
+  .empty-circle-card { align-items: flex-start; flex-direction: column; }
+  .avatar-orbit { width: 96px; height: 92px; }
+  .sos-button { gap: 8px; padding: 9px; }
+  .sos-copy strong { font-size: .79rem; }
+  .sos-copy small { font-size: .62rem; }
+}

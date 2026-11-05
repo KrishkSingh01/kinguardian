@@ -1,0 +1,8 @@
+@keyframes view-enter { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes orbit-breathe { 0%, 100% { transform: scale(.98); opacity: .7; } 50% { transform: scale(1.03); opacity: 1; } }
+.ring-a { animation: orbit-breathe 6s ease-in-out infinite; }
+.ring-b { animation: orbit-breathe 6s ease-in-out -2s infinite; }
+.ring-c { animation: orbit-breathe 6s ease-in-out -4s infinite; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}

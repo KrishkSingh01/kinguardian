@@ -1,0 +1,7 @@
+.pairing-qr { display: block; width: min(240px, 100%); height: auto; margin: 15px auto; border: 1px solid var(--line); border-radius: 12px; padding: 9px; background: #fff; image-rendering: pixelated; }
+.auth-single-card .pairing-status { min-height: 22px; color: var(--forest); font-size: .78rem; }
+.auth-single-card .pairing-warning { border-left: 3px solid var(--coral); padding: 10px 12px; background: var(--paper); color: var(--ink); font-size: .78rem; }
+.pairing-actions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 14px; }
+.pairing-manual { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 18px; }
+.pairing-manual .button { justify-content: center; }
+@media (max-width: 420px) { .pairing-actions { flex-direction: column; }.pairing-actions .button { justify-content: center; } }

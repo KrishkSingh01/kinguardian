@@ -1,0 +1,20 @@
+.app-shell { min-height: 100vh; }
+.sidebar { position: fixed; inset: 0 auto 0 0; z-index: 5; display: flex; width: 248px; flex-direction: column; border-right: 1px solid var(--line); padding: 30px 18px 18px; background: var(--surface); }
+.main-area { min-height: 100vh; margin-left: 248px; }
+.content-wrap { width: min(100%, 1380px); margin: 0 auto; padding: 38px clamp(24px, 4vw, 62px) 24px; }
+.page-topline { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 25px; }
+.top-actions { display: flex; align-items: center; gap: 15px; }
+.welcome-grid { display: grid; grid-template-columns: minmax(0, 1.8fr) minmax(250px, .85fr); gap: 18px; }
+.home-lower-grid { display: grid; grid-template-columns: minmax(0, 1.72fr) minmax(230px, .78fr); gap: 18px; }
+.section-heading { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin: 39px 0 16px; }
+.section-heading h2 { margin: 0; font-size: 1.58rem; }
+.page-view { animation: view-enter .38s var(--ease-out) both; }
+.page-view > .page-intro-row { margin-bottom: 28px; }
+.page-intro-row { display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+.page-intro-row h2, .page-view > div:first-child h2 { margin-bottom: 6px; font-size: clamp(1.85rem, 3vw, 2.55rem); }
+.page-intro { margin-bottom: 0; }
+.circle-choice-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.settings-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 28px; }
+.site-footer { display: flex; justify-content: space-between; gap: 12px; padding-top: 36px; color: var(--ink-muted); font-size: .73rem; }
+.site-footer > span:first-child { color: var(--ink-soft); font-weight: 700; }
+.mobile-header, .mobile-nav { display: none; }

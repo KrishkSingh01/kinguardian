@@ -1,0 +1,57 @@
+.contacts-page { width: min(100% - 32px, 980px); margin: 0 auto; padding: 27px 0 40px; }
+.contacts-page > .brand { display: inline-flex; }
+.contacts-back { display: block; width: fit-content; margin-top: 19px; }
+.contacts-heading { max-width: 690px; margin: 28px 0 23px; }
+.contacts-heading .eyebrow { margin-bottom: 8px; }
+.contacts-heading h1 { margin-bottom: 9px; font-size: clamp(2rem, 4vw, 3.1rem); letter-spacing: -.04em; }
+.contacts-heading > p:last-child { max-width: 620px; margin-bottom: 0; font-size: .88rem; }
+.vault-card, .contact-list-card, .contact-form-card { border: 1px solid var(--line); border-radius: var(--radius-lg); padding: clamp(20px, 4vw, 30px); background: var(--surface); box-shadow: var(--shadow-small); }
+.vault-card { margin-bottom: 17px; }
+.vault-card .eyebrow, .contacts-section-heading .eyebrow { margin-bottom: 5px; }
+.vault-card h2, .contacts-section-heading h2 { margin-bottom: 8px; font-size: 1.35rem; }
+.vault-card > p:not(.eyebrow) { max-width: 650px; margin-bottom: 18px; font-size: .78rem; }
+.contacts-form { display: grid; gap: 8px; }
+.contacts-form > label, .contact-method-group > label:not(.method-toggle) { margin-top: 5px; color: var(--ink); font-size: .74rem; font-weight: 700; }
+.contacts-form input:not([type="checkbox"]), .contacts-form select { width: 100%; min-height: 45px; border: 1px solid var(--line-strong); border-radius: 10px; padding: 9px 12px; background: var(--surface-raised); color: var(--ink); font: inherit; font-size: .8rem; }
+.contacts-form input:focus-visible, .contacts-form select:focus-visible { border-color: var(--forest); outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.contacts-form .select-control { padding-top: 0; padding-bottom: 0; }
+.optional-label { margin-left: 4px; color: var(--ink-muted); font-size: .66rem; font-weight: 500; }
+.contact-method-group { display: grid; gap: 8px; margin: 12px 0 4px; border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.contact-method-group legend { padding: 0 5px; color: var(--ink); font-family: var(--font-display); font-size: .91rem; font-weight: 700; }
+.method-toggle { display: flex; align-items: flex-start; gap: 9px; margin: 0 0 5px; color: var(--ink-soft); font-size: .73rem; line-height: 1.45; }
+.method-toggle input { width: 17px; height: 17px; flex: 0 0 auto; margin: 0; accent-color: var(--forest); }
+.field-hint { color: var(--ink-muted); font-size: .66rem; line-height: 1.5; }
+.vault-warning { margin: 4px 0 0; border-left: 3px solid var(--coral); padding: 5px 0 5px 11px; color: var(--ink-soft); font-size: .72rem; }
+.contact-workspace { display: grid; grid-template-columns: minmax(260px, .78fr) minmax(350px, 1.22fr); align-items: start; gap: 17px; }
+.contacts-section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.contacts-section-heading h2 { margin-bottom: 0; }
+.contacts-count { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 50px; padding: 6px 9px; color: var(--ink-muted); font-size: .65rem; }
+.contact-list { display: grid; gap: 9px; margin: 18px 0 0; padding: 0; list-style: none; }
+.contact-card { border: 1px solid var(--line); border-radius: 13px; padding: 13px; }
+.contact-card h3 { margin: 0; color: var(--ink); font-size: .87rem; overflow-wrap: anywhere; }
+.contact-card p { margin: 4px 0 0; color: var(--ink-muted); font-size: .69rem; overflow-wrap: anywhere; }
+.contact-methods { margin-top: 8px !important; color: var(--ink-soft) !important; }
+.contact-card-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 11px; }
+.contact-card-actions .button { min-height: 37px; padding: 8px 11px; font-size: .69rem; }
+.communication-dialog { width: min(100% - 28px, 560px); max-height: min(90vh, 760px); border: 1px solid var(--line); border-radius: 19px; padding: 0; background: var(--surface); color: var(--ink); box-shadow: var(--shadow-large); }
+.communication-dialog::backdrop { background: rgb(15 24 20 / 62%); backdrop-filter: blur(3px); }
+.communication-dialog-inner { display: grid; gap: 12px; padding: clamp(20px, 5vw, 30px); }
+.communication-dialog h2 { margin: -5px 0 0; font-size: 1.4rem; }
+.communication-recipient { margin: 0; color: var(--ink-soft); font-size: .8rem; }
+.communication-notice { border-left: 3px solid var(--coral); border-radius: 0 10px 10px 0; padding: 10px 12px; background: var(--surface-raised); font-size: .72rem; line-height: 1.5; }
+.communication-notice p { margin: 4px 0 0; color: var(--ink-soft); }
+.communication-dialog label { color: var(--ink); font-size: .74rem; font-weight: 700; }
+.communication-input, #communication-message { width: 100%; border: 1px solid var(--line-strong); border-radius: 10px; padding: 10px 12px; background: var(--surface-raised); color: var(--ink); font: inherit; font-size: .8rem; }
+#communication-message { min-height: 128px; resize: vertical; line-height: 1.5; }
+.communication-input:focus-visible, #communication-message:focus-visible { border-color: var(--forest); outline: 3px solid var(--focus-ring); outline-offset: 2px; }
+.communication-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; }
+.communication-actions [aria-disabled="true"] { opacity: .55; pointer-events: none; }
+.empty-contacts { margin: 17px 0 0; color: var(--ink-muted); font-size: .75rem; }
+.contact-list:not(:empty) + .empty-contacts { display: none; }
+.manual-send-note { margin: 9px 0 17px; border-left: 3px solid var(--lime); padding: 3px 0 3px 11px; color: var(--ink-muted); font-size: .71rem; }
+.contact-form-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
+.contact-form-actions .button { min-height: 43px; }
+.contacts-footer { margin: 17px 0 0; color: var(--ink-muted); font-size: .69rem; text-align: center; }
+@media (max-width: 760px) { .contact-workspace { grid-template-columns: 1fr; }.contact-list-card { order: 1; }.contact-form-card { order: 0; } }
+@media (max-width: 460px) { .contacts-page { width: min(100% - 24px, 980px); padding-top: 18px; }.contact-method-group { padding: 12px; }.contacts-form > .button { width: 100%; } }
+@media (max-width: 460px) { .communication-actions { align-items: stretch; flex-direction: column; }.communication-actions > * { justify-content: center; } }

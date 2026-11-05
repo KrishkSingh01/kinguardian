@@ -1,0 +1,23 @@
+.owner-manager { grid-column: 1 / -1; }
+.owner-account-list-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; border-top: 1px solid var(--line); padding-top: 18px; }
+.owner-account-list-heading h4, .credential-result h4 { margin: 0; color: var(--ink); font-size: .9rem; }
+.owner-account-list { display: grid; gap: 8px; margin: 11px 0 0; padding: 0; list-style: none; }
+.owner-account-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
+.owner-account-identity { min-width: 0; overflow-wrap: anywhere; }
+.owner-account-identity strong, .owner-account-identity small { display: block; }
+.owner-account-identity strong { color: var(--ink); font-size: .77rem; }
+.owner-account-identity small { margin-top: 3px; color: var(--ink-muted); font-size: .68rem; }
+.owner-account-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+.owner-account-actions .button { min-height: 35px; padding: 6px 10px; font-size: .67rem; }
+.owner-account-empty { color: var(--ink-muted); font-size: .75rem; }
+.owner-manager .form-message { margin-bottom: 0; }
+.owner-manager .credential-result { max-width: 540px; }
+.owner-manager .credential-result p { margin: 7px 0 0; color: var(--ink-muted); font-size: .72rem; }
+.owner-manager .credential-result label { display: block; margin-top: 12px; color: var(--ink); font-size: .7rem; font-weight: 700; }
+.owner-manager .credential-box input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink); font: .68rem var(--font-body); }
+.owner-manager .owner-setup-qr { display: block; width: min(224px, 100%); height: auto; margin-top: 14px; border: 1px solid var(--line); border-radius: 12px; padding: 8px; background: #fff; image-rendering: pixelated; }
+.owner-manager .owner-qr-download { display: inline-flex; margin-top: 10px; text-decoration: none; }
+@media (max-width: 560px) {
+  .owner-account-row { align-items: flex-start; flex-direction: column; }
+  .owner-account-actions { justify-content: flex-start; }
+}
