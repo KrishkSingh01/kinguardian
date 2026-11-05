@@ -5,6 +5,7 @@ compatibility_date = "2026-11-05"
 [triggers]
 crons = ["*/1 * * * *"]
 
+
 [[d1_databases]]
 binding = "DB"
 database_name = "kinguardian-db"

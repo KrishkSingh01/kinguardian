@@ -16,7 +16,44 @@ def expect_integrity_error(connection: sqlite3.Connection, sql: str, values: tup
     raise AssertionError("Expected a schema constraint to reject this record")
 
 
+def verify_password_iteration_migration_guard() -> None:
+    connection = sqlite3.connect(":memory:")
+    connection.execute("PRAGMA foreign_keys = ON")
+    migration_paths = sorted(MIGRATIONS.glob("*.sql"))
+    for migration_path in migration_paths:
+        if migration_path.name != "0015_cloudflare_password_iterations.sql":
+            connection.executescript(migration_path.read_text(encoding="utf-8"))
+
+    connection.execute(
+        """INSERT INTO users (
+             user_id, username, role, password_hash, password_salt,
+             created_at, updated_at
+           ) VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        ("protected-user", "owner", "owner", b"hash", b"salt", 1, 1),
+    )
+    connection.execute(
+        """INSERT INTO sessions (
+             session_token_hash, csrf_token_hash, user_id,
+             created_at, expires_at, last_seen_at
+           ) VALUES (?, ?, ?, ?, ?, ?)""",
+        (b"session", b"csrf", "protected-user", 1, 2, 1),
+    )
+    connection.commit()
+
+    guarded_migration = MIGRATIONS / "0015_cloudflare_password_iterations.sql"
+    try:
+        connection.executescript(guarded_migration.read_text(encoding="utf-8"))
+    except sqlite3.IntegrityError:
+        pass
+    else:
+        raise AssertionError("Migration 0015 must stop when users exist")
+
+    assert connection.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 1
+    assert connection.execute("SELECT COUNT(*) FROM sessions").fetchone()[0] == 1
+
+
 def main() -> None:
+    verify_password_iteration_migration_guard()
     connection = sqlite3.connect(":memory:")
     connection.execute("PRAGMA foreign_keys = ON")
 
@@ -44,6 +81,21 @@ def main() -> None:
     missing = expected - tables
     if missing:
         raise AssertionError(f"Missing tables: {sorted(missing)}")
+
+    password_iterations_column = next(
+        row for row in connection.execute("PRAGMA table_info(users)")
+        if row[1] == "password_iterations"
+    )
+    if password_iterations_column[4] != "100000":
+        raise AssertionError("The account password work-factor default must be 100,000")
+    expect_integrity_error(
+        connection,
+        """INSERT INTO users (
+             user_id, username, role, password_iterations, password_hash,
+             password_salt, created_at, updated_at
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+        ("above-cap", "above-cap", "member", 600000, b"hash", b"salt", 1, 1),
+    )
 
     connection.execute(
         """INSERT INTO users (

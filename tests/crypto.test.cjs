@@ -7,6 +7,7 @@ const cryptoModuleUrl = pathToFileURL(path.resolve(__dirname, "../functions/_sha
 
 test("password hashes use the configured PBKDF2 work factor and compare safely", async () => {
   const cryptoModule = await import(cryptoModuleUrl);
+  assert.equal(cryptoModule.PASSWORD_ITERATIONS, 100_000);
   const salt = cryptoModule.randomBytes(16);
   const first = await cryptoModule.derivePasswordHash("a unique test phrase with 24 chars", salt);
   const same = await cryptoModule.derivePasswordHash("a unique test phrase with 24 chars", salt);
@@ -15,6 +16,7 @@ test("password hashes use the configured PBKDF2 work factor and compare safely",
   assert.equal(cryptoModule.constantTimeEqual(first, same), true);
   assert.equal(cryptoModule.constantTimeEqual(first, different), false);
   await assert.rejects(() => cryptoModule.derivePasswordHash("x", salt, 1000), /work factor/);
+  await assert.rejects(() => cryptoModule.derivePasswordHash("x", salt, 100_001), /work factor/);
 });
 
 test("account identifiers support Unicode and reject unsafe punctuation", async () => {
