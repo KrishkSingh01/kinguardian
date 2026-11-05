@@ -1,0 +1,15 @@
+name = "kinguardian"
+compatibility_date = "2026-11-05"
+pages_build_output_dir = "./dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "kinguardian-db"
+# Replace this value with the UUID returned by:
+# npx wrangler d1 create kinguardian-db
+database_id = "00000000-0000-0000-0000-000000000000"
+# Pages local development uses this local-only binding ID. Replace database_id
+# with the real D1 UUID before configuring or deploying a Cloudflare project.
+preview_database_id = "DB"
+migrations_dir = "migrations"
+

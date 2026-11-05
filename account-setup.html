@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en" data-theme="system">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f3f2ec" />
+    <meta name="description" content="Set a private KinGuardian account password." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/icons/kinguardian.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/auth.css" />
+    <script type="module" src="js/account-setup.js"></script>
+    <title>Choose a password · KinGuardian</title>
+  </head>
+  <body class="auth-page">
+    <a class="skip-link" href="#account-setup-form">Skip to account setup</a>
+    <main class="auth-single">
+      <a class="brand" href="login.html" aria-label="KinGuardian sign in"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 3.5 34 9v10.4c0 8.1-5.7 14-14 17.1-8.3-3.1-14-9-14-17.1V9l14-5.5Z"/><path d="M16 20h8"/></svg></span><span class="brand-name">kin<span>guardian</span></span></a>
+      <section class="auth-single-card" aria-labelledby="account-setup-heading">
+        <p class="eyebrow">ACCOUNT SECURITY</p>
+        <h1 id="account-setup-heading">Choose your password.</h1>
+        <p class="auth-subtitle">Create a unique passphrase with at least 12 characters. Your owner cannot read it.</p>
+        <form id="account-setup-form" class="auth-form">
+          <label for="new-password">New password</label>
+          <input id="new-password" name="new-password" type="password" autocomplete="new-password" required minlength="12" maxlength="256" />
+          <label for="confirm-password">Confirm new password</label>
+          <input id="confirm-password" name="confirm-password" type="password" autocomplete="new-password" required minlength="12" maxlength="256" />
+          <button class="button button-dark auth-submit" id="account-setup-submit" type="submit">Save password <span aria-hidden="true">→</span></button>
+        </form>
+        <p class="form-message" id="account-setup-message" role="status" aria-live="polite"></p>
+        <section class="credential-result" id="account-setup-success" aria-labelledby="account-setup-success-heading" hidden>
+          <h2 id="account-setup-success-heading">Password saved.</h2>
+          <p class="auth-subtitle">Your account is ready. Sign in with your username and the password you just chose.</p>
+          <a class="button button-dark auth-submit" href="login.html">Continue to sign in <span aria-hidden="true">→</span></a>
+        </section>
+        <p class="auth-privacy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3m-11 0h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"/></svg> The setup link is single-use and expires automatically.</p>
+        <a class="text-link" href="login.html">Return to sign in <span aria-hidden="true">→</span></a>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en" data-theme="system">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f3f2ec" />
+    <meta name="description" content="One-time secure KinGuardian owner setup." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/icons/kinguardian.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/auth.css" />
+    <script type="module" src="js/setup.js"></script>
+    <title>Owner setup · KinGuardian</title>
+  </head>
+  <body class="auth-page">
+    <a class="skip-link" href="#setup-form">Skip to owner setup</a>
+    <main class="auth-single">
+      <a class="brand" href="login.html" aria-label="KinGuardian sign in"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 3.5 34 9v10.4c0 8.1-5.7 14-14 17.1-8.3-3.1-14-9-14-17.1V9l14-5.5Z"/><path d="M16 20h8"/></svg></span><span class="brand-name">kin<span>guardian</span></span></a>
+      <section class="auth-single-card" aria-labelledby="setup-heading">
+        <p class="eyebrow">ONE-TIME OWNER SETUP</p>
+        <h1 id="setup-heading">Create the owner account.</h1>
+        <p class="auth-subtitle">This setup is only available once. Enter the one-time secret you configured outside the app. KinGuardian will generate a temporary password that you must change at first sign-in.</p>
+        <form id="setup-form" class="auth-form">
+          <label for="bootstrap-secret">One-time setup secret</label>
+          <input id="bootstrap-secret" name="bootstrap-secret" type="password" autocomplete="off" required minlength="32" maxlength="512" />
+          <button class="button button-dark auth-submit" id="setup-submit" type="submit">Create owner account <span aria-hidden="true">→</span></button>
+        </form>
+        <p class="form-message" id="setup-message" role="status" aria-live="polite"></p>
+        <section class="credential-result" id="credential-result" aria-labelledby="credential-heading" hidden>
+          <p class="eyebrow">SHOWN ONCE</p><h2 id="credential-heading">Save this temporary password.</h2>
+          <p class="auth-subtitle">The owner username is <strong>owner</strong>. Copy the password to a password manager, then continue to sign in and change it.</p>
+          <div class="credential-box"><code id="temporary-password"></code><button class="button button-outline" id="copy-password" type="button">Copy</button></div>
+          <a class="button button-dark auth-submit" href="login.html">Continue to sign in <span aria-hidden="true">→</span></a>
+        </section>
+        <p class="auth-privacy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3m-11 0h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"/></svg> No default credentials. The setup secret is never stored in D1.</p>
+        <a class="text-link" href="login.html">Return to sign in <span aria-hidden="true">→</span></a>
+      </section>
+    </main>
+  </body>
+</html>

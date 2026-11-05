@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en" data-theme="system">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f3f2ec" />
+    <meta name="description" content="Manage your encrypted KinGuardian emergency contacts." />
+    <link rel="icon" href="assets/icons/kinguardian.svg" type="image/svg+xml" />
+    <title>Emergency contacts · KinGuardian</title>
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/auth.css" />
+    <link rel="stylesheet" href="css/contacts.css" />
+    <script type="module" src="js/contacts.js"></script>
+  </head>
+  <body class="auth-page">
+    <main class="contacts-page">
+      <a class="brand" href="index.html#circle" aria-label="Back to KinGuardian">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><path d="M20 3.5 34 9v10.4c0 8.1-5.7 14-14 17.1-8.3-3.1-14-9-14-17.1V9l14-5.5Z" stroke="currentColor" stroke-width="1.7"/><path d="M13.2 20.3c0-3.8 2.6-6.6 6.8-6.6s6.8 2.8 6.8 6.6c0 3.5-2.6 6.2-6.8 9.1-4.2-2.9-6.8-5.6-6.8-9.1Z" stroke="currentColor" stroke-width="1.7"/><path d="M16 20h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+        <span class="brand-name">kin<span>guardian</span></span>
+      </a>
+      <a class="text-link contacts-back" href="index.html#circle">← Back to trusted circle</a>
+
+      <header class="contacts-heading">
+        <p class="eyebrow">YOUR PEOPLE, YOUR CHOICE</p>
+        <h1>Emergency contacts</h1>
+        <p>Add people who do not need a KinGuardian account. Their details are encrypted in this browser before they are saved.</p>
+      </header>
+
+      <section class="vault-card" id="vault-card" aria-labelledby="vault-heading">
+        <p class="eyebrow">PRIVATE DATA VAULT</p>
+        <h2 id="vault-heading">Unlocking your contacts</h2>
+        <p id="vault-explainer">Your encryption passphrase is separate from your account password and is never sent to KinGuardian. The vault locks after 15 minutes without activity and when you leave this page.</p>
+        <form id="vault-form" class="contacts-form" hidden>
+          <label for="vault-passphrase" id="vault-passphrase-label">Encryption passphrase</label>
+          <input id="vault-passphrase" name="passphrase" type="password" minlength="12" maxlength="128" autocomplete="new-password" required />
+          <div id="vault-confirm-wrap" hidden>
+            <label for="vault-passphrase-confirm">Confirm encryption passphrase</label>
+            <input id="vault-passphrase-confirm" name="passphraseConfirm" type="password" minlength="12" maxlength="128" autocomplete="new-password" />
+          </div>
+          <button class="button button-dark" id="vault-submit" type="submit">Unlock contacts</button>
+          <p class="vault-warning" id="vault-warning" hidden>If you forget this passphrase, this prototype has no recovery process and the encrypted contact data may be permanently unreadable. Store it safely before continuing.</p>
+        </form>
+        <p class="form-message" id="vault-message" role="status" aria-live="polite"></p>
+      </section>
+
+      <section class="contact-workspace" id="contact-workspace" hidden>
+        <section class="contact-list-card" aria-labelledby="contacts-list-title">
+          <div class="contacts-section-heading"><div><p class="eyebrow">ONLY YOU CAN OPEN THESE DETAILS</p><h2 id="contacts-list-title">Your list</h2></div><span class="contacts-count" id="contacts-count">0 contacts</span></div>
+          <ul class="contact-list" id="contact-list"></ul>
+          <p class="empty-contacts" id="empty-contacts">No contacts yet. Add someone you trust below.</p>
+        </section>
+
+        <section class="contact-form-card" aria-labelledby="contact-form-title">
+          <div class="contacts-section-heading"><div><p class="eyebrow">CONTACT DETAILS</p><h2 id="contact-form-title">Add a contact</h2></div></div>
+          <p class="manual-send-note">Saving a contact does not message them. Phone, email, and WhatsApp are optional and can be enabled independently.</p>
+          <form id="contact-form" class="contacts-form">
+            <label for="contact-name">Name <span aria-hidden="true">*</span></label>
+            <input id="contact-name" name="name" type="text" maxlength="100" autocomplete="name" required />
+            <label for="contact-relationship">Relationship <span class="optional-label">Optional</span></label>
+            <input id="contact-relationship" name="relationship" type="text" maxlength="60" autocomplete="off" />
+
+            <fieldset class="contact-method-group">
+              <legend>Phone/SMS</legend>
+              <label class="method-toggle"><input id="method-sms" name="sms" type="checkbox" /><span>Enable SMS composer for this contact</span></label>
+              <label for="phone-country">Country or region</label>
+              <input id="phone-country" name="phoneCountry" type="text" list="country-options" placeholder="Search by country or dialing code" autocomplete="off" />
+              <label for="phone-number">Phone number <span class="optional-label">Optional</span></label>
+              <input id="phone-number" name="phone" type="tel" inputmode="tel" autocomplete="tel-national" aria-describedby="phone-format-hint" placeholder="Enter the national number" />
+              <span class="field-hint" id="phone-format-hint">Numbers are validated for the selected country and saved in E.164 format. Ownership is not verified.</span>
+            </fieldset>
+
+            <fieldset class="contact-method-group">
+              <legend>Email</legend>
+              <label class="method-toggle"><input id="method-email" name="emailEnabled" type="checkbox" /><span>Enable email composer for this contact</span></label>
+              <label for="contact-email">Email address <span class="optional-label">Optional</span></label>
+              <input id="contact-email" name="email" type="email" maxlength="254" autocomplete="email" />
+            </fieldset>
+
+            <fieldset class="contact-method-group">
+              <legend>WhatsApp</legend>
+              <label class="method-toggle"><input id="method-whatsapp" name="whatsapp" type="checkbox" /><span>Enable WhatsApp composer for this contact</span></label>
+              <label for="whatsapp-country">Country or region</label>
+              <input id="whatsapp-country" name="whatsappCountry" type="text" list="country-options" placeholder="Search by country or dialing code" autocomplete="off" />
+              <label for="whatsapp-number">WhatsApp number <span class="optional-label">Optional</span></label>
+              <input id="whatsapp-number" name="whatsappNumber" type="tel" inputmode="tel" autocomplete="off" placeholder="Enter the national number" />
+              <span class="field-hint">WhatsApp numbers are parsed internationally. They are not verified as WhatsApp accounts.</span>
+            </fieldset>
+
+            <datalist id="country-options"></datalist>
+            <label for="contact-priority">Contact order</label>
+            <select id="contact-priority" name="priority" class="select-control"><option value="10">1 · Highest</option><option value="20">2</option><option value="30">3</option><option value="40">4</option><option value="50">5</option></select>
+            <p class="form-message" id="contact-message" role="status" aria-live="polite"></p>
+            <div class="contact-form-actions"><button class="button button-dark" id="save-contact" type="submit">Save encrypted contact</button><button class="button button-outline" id="cancel-edit" type="button" hidden>Cancel edit</button></div>
+          </form>
+        </section>
+      </section>
+      <dialog class="communication-dialog" id="communication-dialog" aria-labelledby="communication-title">
+        <div class="communication-dialog-inner">
+          <p class="eyebrow">REVIEW BEFORE YOU LEAVE THIS APP</p>
+          <h2 id="communication-title">Prepare a message</h2>
+          <p class="communication-recipient" id="communication-recipient"></p>
+          <div class="communication-notice"><strong>KinGuardian will not send this message.</strong><p>Opening another app or website does not prove it opened, was sent, or was delivered. The chosen app receives the text only after you choose to open its composer. WhatsApp click-to-chat includes the message text in a link to WhatsApp.</p></div>
+          <label for="communication-subject" id="communication-subject-label" hidden>Email subject</label>
+          <input id="communication-subject" class="communication-input" type="text" maxlength="120" hidden />
+          <label for="communication-message">Message · maximum 500 characters</label>
+          <textarea id="communication-message" maxlength="500" rows="6"></textarea>
+          <p class="field-hint" id="communication-provider-status">Automatic provider: not configured. Manual composer only.</p>
+          <p class="form-message" id="communication-status" role="status" aria-live="polite"></p>
+          <div class="communication-actions"><button class="button button-outline" id="copy-communication" type="button">Copy message</button><a class="button button-dark" id="open-communication" href="#" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer" aria-disabled="true">Prepare message</a><button class="button button-outline" id="close-communication" type="button">Close</button></div>
+        </div>
+      </dialog>
+      <p class="contacts-footer">KinGuardian does not contact emergency services. In immediate danger, contact your local emergency service directly.</p>
+    </main>
+  </body>
+</html>

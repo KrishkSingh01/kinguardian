@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en" data-theme="system">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f3f2ec" />
+    <meta name="description" content="Pair a new KinGuardian device with approval from a signed-in device." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/icons/kinguardian.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/auth.css" />
+    <link rel="stylesheet" href="css/pair-device.css" />
+    <script type="module" src="js/pair-device.js"></script>
+    <title>Pair a device · KinGuardian</title>
+  </head>
+  <body class="auth-page">
+    <a class="skip-link" href="#pairing-content">Skip to device pairing</a>
+    <main class="auth-single">
+      <a class="brand" href="login.html" aria-label="KinGuardian sign in"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 3.5 34 9v10.4c0 8.1-5.7 14-14 17.1-8.3-3.1-14-9-14-17.1V9l14-5.5Z"/><path d="M16 20h8"/></svg></span><span class="brand-name">kin<span>guardian</span></span></a>
+      <section class="auth-single-card" id="pairing-content" aria-labelledby="pairing-heading">
+        <p class="eyebrow">ACCOUNT SECURITY</p>
+        <h1 id="pairing-heading">Pair a device securely.</h1>
+        <p class="auth-subtitle">A new device can sign in only after you approve its short-lived request from a device that is already signed in.</p>
+        <p class="form-message" id="pairing-message" role="status" aria-live="polite">Checking this device…</p>
+
+        <section class="credential-result" id="pairing-request" aria-labelledby="pairing-request-heading" hidden>
+          <h2 id="pairing-request-heading">Approve from a signed-in device.</h2>
+          <p>On the device you already use, scan this QR code with its camera. You can also copy the pairing link and open it there. The request expires in 10 minutes.</p>
+          <img class="pairing-qr" id="pairing-qr" width="240" height="240" alt="QR code to approve this device sign-in" />
+          <label for="pairing-link">Pairing link / manual code</label>
+          <div class="credential-box"><input id="pairing-link" type="text" readonly aria-label="One-time pairing link" /><button class="button button-outline" id="copy-pairing-link" type="button">Copy link</button></div>
+          <p class="pairing-status" id="pairing-wait-status">Waiting for approval from your signed-in device.</p>
+          <button class="button button-outline" id="cancel-pairing" type="button">Cancel this request</button>
+        </section>
+
+        <section class="credential-result" id="pairing-approval" aria-labelledby="pairing-approval-heading" hidden>
+          <h2 id="pairing-approval-heading">Confirm this sign-in.</h2>
+          <p id="pairing-approver-identity"></p>
+          <p class="pairing-warning">Approve only if you started this request on the new device you are holding. Approval gives that device access to this account until its session expires or you sign out.</p>
+          <div class="pairing-actions"><button class="button button-dark" id="approve-pairing" type="button">Approve sign-in</button><button class="button button-outline" id="reject-pairing" type="button">Reject request</button></div>
+        </section>
+
+        <form class="auth-form pairing-manual" id="manual-pairing-form" hidden>
+          <label for="manual-pairing-code">Or paste a one-time code or link from the new device</label>
+          <input id="manual-pairing-code" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="2048" />
+          <button class="button button-outline" type="submit">Check pairing request</button>
+        </form>
+        <p class="auth-privacy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3m-11 0h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"/></svg> Pairing links are single-use and never replace your password.</p>
+        <a class="text-link" href="login.html">Return to sign in <span aria-hidden="true">→</span></a>
+      </section>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en" data-theme="system">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f3f2ec" />
+    <meta name="description" content="Accept or decline a KinGuardian trusted-circle invitation." />
+    <link rel="icon" href="assets/icons/kinguardian.svg" type="image/svg+xml" />
+    <title>Trusted-circle invitation · KinGuardian</title>
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/auth.css" />
+    <link rel="stylesheet" href="css/contacts.css" />
+    <link rel="stylesheet" href="css/invite.css" />
+    <script type="module" src="js/invite.js"></script>
+  </head>
+  <body class="auth-page">
+    <main class="invite-page">
+      <a class="brand" href="index.html" aria-label="KinGuardian home">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><path d="M20 3.5 34 9v10.4c0 8.1-5.7 14-14 17.1-8.3-3.1-14-9-14-17.1V9l14-5.5Z" stroke="currentColor" stroke-width="1.7"/><path d="M13.2 20.3c0-3.8 2.6-6.6 6.8-6.6s6.8 2.8 6.8 6.6c0 3.5-2.6 6.2-6.8 9.1-4.2-2.9-6.8-5.6-6.8-9.1Z" stroke="currentColor" stroke-width="1.7"/><path d="M16 20h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
+        <span class="brand-name">kin<span>guardian</span></span>
+      </a>
+      <section class="invite-card">
+        <p class="eyebrow">A CONNECTION NEEDS TWO YESSES</p>
+        <h1>Trusted-circle invitation</h1>
+        <p id="invite-intro">Accepting connects your KinGuardian accounts. It does not turn on SOS, location, or check-in sharing.</p>
+        <form id="invite-code-form" class="contacts-form" hidden>
+          <label for="invite-code-entry">Paste the manual invitation code</label>
+          <input id="invite-code-entry" type="text" inputmode="text" autocomplete="off" autocapitalize="none" spellcheck="false" minlength="43" maxlength="43" />
+          <button class="button button-dark" type="submit">Continue</button>
+        </form>
+        <div class="invite-decision" id="invite-decision" hidden>
+          <p>Do you want to connect with the KinGuardian member who shared this invitation?</p>
+          <div class="contact-form-actions"><button class="button button-dark" id="accept-invitation" type="button">Accept invitation</button><button class="button button-outline" id="reject-invitation" type="button">Decline</button></div>
+        </div>
+        <p class="form-message" id="invite-message" role="status" aria-live="polite">Checking invitation…</p>
+        <p class="field-hint">This invitation is single-use and expires after 24 hours. If you do not recognize the person who sent it, decline and do not share it further.</p>
+      </section>
+      <p class="contacts-footer">KinGuardian does not provide emergency services. A trusted connection cannot see your private contact or location information unless you choose to share it.</p>
+    </main>
+  </body>
+</html>
