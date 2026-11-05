@@ -1,6 +1,6 @@
 import { newMemberIdentity, newOpaqueCredential } from "../../../_shared/accounts.js";
 import { requireOwner, recordOwnerAudit } from "../../../_shared/owner.js";
-import { randomToken, sha256 } from "../../../_shared/crypto.js";
+import { PASSWORD_ITERATIONS, randomToken, sha256 } from "../../../_shared/crypto.js";
 import { jsonResponse, requirePost, safeError } from "../../../_shared/http.js";
 
 const ACCOUNT_SETUP_LIFETIME_MS = 24 * 60 * 60 * 1000;
@@ -43,7 +43,7 @@ export async function onRequestPost(context) {
           password_iterations, password_hash, password_salt,
           must_change_password, created_at, updated_at
         ) VALUES (?, ?, 'member', 'active', 'PBKDF2-HMAC-SHA-256', ?, ?, ?, 1, ?, ?)
-      `).bind(identity.userId, identity.username, 600_000, credential.hash, credential.salt, now, now),
+      `).bind(identity.userId, identity.username, PASSWORD_ITERATIONS, credential.hash, credential.salt, now, now),
       context.env.DB.prepare(`
         INSERT INTO notification_preferences (user_id, updated_at) VALUES (?, ?)
       `).bind(identity.userId, now),

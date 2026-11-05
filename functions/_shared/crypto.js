@@ -1,6 +1,7 @@
 const encoder = new TextEncoder();
 export const PASSWORD_ALGORITHM = "PBKDF2-HMAC-SHA-256";
-export const PASSWORD_ITERATIONS = 600_000;
+// Cloudflare Workers rejects PBKDF2 requests above 100,000 iterations.
+export const PASSWORD_ITERATIONS = 100_000;
 
 export function randomBytes(length) {
   const bytes = new Uint8Array(length);
@@ -49,14 +50,14 @@ export async function hmacSha256(secret, value) {
 }
 
 export async function derivePasswordHash(password, salt, iterations = PASSWORD_ITERATIONS) {
-  if (!Number.isInteger(iterations) || iterations < PASSWORD_ITERATIONS || iterations > 1_200_000) {
+  if (!Number.isInteger(iterations) || iterations !== PASSWORD_ITERATIONS) {
     throw new Error("Unsupported password hashing work factor.");
   }
-  const material = await crypto.subtle.importKey(
-    "raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"],
-  );
+  const key = await crypto.subtle.importKey("raw", encoder.encode(password), "PBKDF2", false, ["deriveBits"]);
   const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", hash: "SHA-256", salt, iterations }, material, 256,
+    { name: "PBKDF2", hash: "SHA-256", salt, iterations },
+    key,
+    256,
   );
   return new Uint8Array(bits);
 }

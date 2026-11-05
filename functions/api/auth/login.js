@@ -1,6 +1,6 @@
 import { clearRateLimit, isRateLimited, recordFailure } from "../../_shared/rate-limit.js";
 import { createSession, sessionCookies } from "../../_shared/auth.js";
-import { constantTimeEqual, derivePasswordHash, normalizeUsername } from "../../_shared/crypto.js";
+import { constantTimeEqual, derivePasswordHash, normalizeUsername, PASSWORD_ITERATIONS } from "../../_shared/crypto.js";
 import { jsonResponse, readJsonRequest, requirePost, safeError } from "../../_shared/http.js";
 
 const USER_LIMIT = 5;
@@ -34,7 +34,7 @@ export async function onRequestPost(context) {
     `).bind(username).first();
 
     const salt = user ? new Uint8Array(user.password_salt) : new Uint8Array(16).fill(0x4b);
-    const iterations = user?.password_iterations || 600_000;
+    const iterations = user?.password_iterations || PASSWORD_ITERATIONS;
     const hash = await derivePasswordHash(body.password, salt, iterations);
     const correct = Boolean(user
       && user.account_status === "active"

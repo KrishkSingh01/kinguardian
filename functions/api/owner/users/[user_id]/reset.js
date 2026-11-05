@@ -1,6 +1,6 @@
 import { newOpaqueCredential } from "../../../../_shared/accounts.js";
 import { requireOwner } from "../../../../_shared/owner.js";
-import { randomToken, sha256 } from "../../../../_shared/crypto.js";
+import { PASSWORD_ITERATIONS, randomToken, sha256 } from "../../../../_shared/crypto.js";
 import { jsonResponse, requirePost, safeError } from "../../../../_shared/http.js";
 
 const PASSWORD_SETUP_LIFETIME_MS = 60 * 60 * 1000;
@@ -31,10 +31,10 @@ export async function onRequestPost(context) {
     const expiresAt = now + PASSWORD_SETUP_LIFETIME_MS;
     await context.env.DB.batch([
       context.env.DB.prepare(`
-        UPDATE users SET password_algorithm = 'PBKDF2-HMAC-SHA-256', password_iterations = 600000,
+        UPDATE users SET password_algorithm = 'PBKDF2-HMAC-SHA-256', password_iterations = ?,
           password_hash = ?, password_salt = ?, password_changed_at = NULL,
           must_change_password = 1, updated_at = ? WHERE user_id = ? AND role = 'member'
-      `).bind(credential.hash, credential.salt, now, targetId),
+      `).bind(PASSWORD_ITERATIONS, credential.hash, credential.salt, now, targetId),
       context.env.DB.prepare(
         "UPDATE sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL",
       ).bind(now, targetId),
