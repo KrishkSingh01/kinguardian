@@ -1,6 +1,6 @@
 # KinGuardian release security
 
-**Current release:** KinGuardian `0.1.0`, web/PWA source and preview build only. This repository does not contain a Capacitor project, Android application ID, APK, app-signing key, or Play Store package. No APK has been built, signed, installed, or scanned. The Pages site has not been deployed, and its HTTPS behavior has not been tested on a public URL.
+**Current release:** KinGuardian `0.1.0`, web/PWA. Cloudflare reported the Pages deployment succeeded at [kinguardian.pages.dev](https://kinguardian.pages.dev/); visual and authenticated browser checks remain incomplete. This repository does not contain a Capacitor project, Android application ID, APK, app-signing key, or Play Store package. No APK has been built, signed, installed, or scanned.
 
 ## Build and verify the web release
 
@@ -52,7 +52,7 @@ References: [Android app signing](https://developer.android.com/studio/publish/a
 
 ## PWA updates and browser security
 
-- Cloudflare Pages provides the HTTPS hosting endpoint. Before public use, confirm that HTTP redirects to HTTPS; for a custom domain, enable **Always Use HTTPS** in Cloudflare after its certificate is active.
+- The Pages `*.pages.dev` URL is the hosted HTTPS endpoint. Its browser behavior has not been visually verified. For a custom domain, enable **Always Use HTTPS** in Cloudflare after its certificate is active.
 - `_headers` sets a same-origin Content Security Policy, blocks framing and MIME sniffing, limits browser permissions, and sets a no-referrer policy. Keep third-party script origins out of the policy unless they are reviewed and necessary.
 - The versioned Service Worker caches only the approved static shell. It bypasses `/api/` responses and removes only older caches with KinGuardian’s own cache prefix. It does not clear IndexedDB or private browser data during updates.
 - Increment `CACHE_NAME` in `service-worker.js` when static behavior changes. Review the cache list whenever adding a page or asset; never add API responses, credentials, private contact data, or location data.
@@ -69,9 +69,7 @@ Only the browser build is copied to `dist/`. Wrangler and `workerd` are developm
 
 ## GitHub repository preparation
 
-The workspace currently has no `.git` repository and Git is not available in the Codex shell. `.gitignore` excludes local secrets, databases, logs, backups, installed packages, generated builds, Android build folders, APKs/AABs, and signing keystores. `.dev.vars.example` and `worker/.dev.vars.example` contain placeholders only. Review the GitHub Desktop file list before the first commit and confirm none of the ignored/local files are staged.
-
-Use GitHub Desktop with a GitHub account. A private repository is the safer starting visibility; change visibility only after a deliberate review. GitHub’s instructions for [creating and publishing a repository](https://docs.github.com/en/desktop/overview/creating-your-first-repository-using-github-desktop) describe the local repository and **Keep this code private** option.
+The GitHub repository already exists. This exported workspace folder has no `.git` metadata and Git is not available in the Codex shell, so edits here do not update GitHub automatically. `.gitignore` excludes local secrets, databases, logs, backups, installed packages, generated builds, Android build folders, APKs/AABs, and signing keystores. `.dev.vars.example` and `worker/.dev.vars.example` contain placeholders only. Compare local changes with GitHub before uploading them, and do not publish `.dev.vars`, `.env`, databases, backups, APKs, or signing keys.
 
 ## Cloudflare Pages and D1 release configuration
 
@@ -80,7 +78,7 @@ The project is custom HTML/CSS/vanilla JavaScript with an esbuild build step, no
 | Setting | Value |
 | --- | --- |
 | Framework preset | None / Other |
-| Root directory | Repository root (leave blank/default) |
+| Root directory | Leave the Path field empty (Cloudflare uses the repository root) |
 | Build command | `npm run build` |
 | Build output directory | `dist` |
 | `NODE_VERSION` | `26.13.0` (also recorded in `.node-version`) |
@@ -88,7 +86,7 @@ The project is custom HTML/CSS/vanilla JavaScript with an esbuild build step, no
 
 Cloudflare Pages Git integration cannot later be converted to Direct Upload, so choose the Git integration deliberately. The root `functions/` directory must remain outside `dist/` so Pages can build the API routes.
 
-Create the remote D1 database with the exact name `kinguardian-db`. Replace the all-zero `database_id` in both `wrangler.toml` and `worker/wrangler.toml` with the returned UUID. Keep the binding name exactly `DB`. The Pages Wrangler file contains `pages_build_output_dir`, so after opting into that configuration, treat the Wrangler file as the source of truth and keep dashboard settings consistent; do not overwrite it with a downloaded config without reviewing the diff.
+The remote D1 database already exists as `kinguardian-db`. Both Wrangler files should use UUID `941f2062-5aad-4e68-ae81-fc1b4fb9d7cb` and binding name `DB`. The Pages Wrangler file contains `pages_build_output_dir`; keep dashboard settings and the Wrangler file aligned.
 
 Configure secrets through Cloudflare’s secret settings, never in GitHub or TOML:
 
@@ -97,9 +95,9 @@ Configure secrets through Cloudflare’s secret settings, never in GitHub or TOM
 - Pages D1 binding: `DB` → `kinguardian-db`.
 - Scheduled Worker D1 binding: `DB` → the same `kinguardian-db`.
 
-Create the D1 database and add the binding in Cloudflare’s **Workers & Pages** and **D1 SQL database** areas, then redeploy for the binding to take effect. Review both environments and keep production secrets separate from preview secrets. Never place the VAPID private key in Pages, GitHub variables, or browser assets.
+Confirm the Pages `DB` binding points to this database. Check the production environment and keep production secrets separate from preview secrets. Never place the VAPID private key in Pages, GitHub variables, or browser assets.
 
-Do not apply production migrations or publish a production deployment until you have reviewed the migration files, verified a backup, confirmed the intended account/project/database, and explicitly authorized the production change. The current 14 migrations have only been applied to the local emulator.
+Before applying production migrations, review all migration files, confirm the intended account/project/database, and make a backup. Production D1 migrations `0001`–`0014` are applied; `0015_cloudflare_password_iterations.sql` is pending. A read-only count found zero user rows, and owner setup remains unused. The Cloudflare Pages deployment exists; the matching password-hash code has not yet been manually deployed.
 
 References: [Cloudflare Pages Git integration](https://developers.cloudflare.com/pages/configuration/git-integration/), [build settings](https://developers.cloudflare.com/pages/configuration/build-configuration/), [D1 bindings](https://developers.cloudflare.com/pages/functions/bindings/), and [Pages Wrangler configuration](https://developers.cloudflare.com/pages/functions/wrangler-configuration/).
 
@@ -107,22 +105,17 @@ References: [Cloudflare Pages Git integration](https://developers.cloudflare.com
 
 - Node.js `26.13.0` and npm are installed for the current workspace.
 - `npm test`: 32 passed, 0 failed.
-- `npm audit --audit-level=high`: 0 vulnerabilities reported for the locked npm dependency tree.
+- `npm audit --audit-level=high` could not reach `registry.npmjs.org` in this environment, so current dependency advisory status was not verified.
 - `npm run check:release`: passed for KinGuardian `0.1.0` (`development`); all 45 public assets matched their recorded SHA-256 checksums. The build output did not include server source, known credential patterns, or prohibited private/executable file types.
 - Source inspection found no dynamic code evaluation (`eval`, `new Function`), HTML string injection APIs (`innerHTML`, `outerHTML`, `insertAdjacentHTML`), remote script tags, file-upload inputs, or iframes in the reviewed app source. This is a scoped source check, not a penetration test.
 - No APK, Android permissions, or signing keys exist in the project, so APK signature, installation, update, and Play Protect checks are not applicable yet.
-- The local D1 emulator has migrations `0001`–`0014`. No production D1, secrets, Pages project, custom domain, HTTPS redirect, GitHub repository, or deployment has been configured.
-- Browser visual review and authenticated browser integration remain pending. The local preview is not a public HTTPS test; PWA installation and update behavior have not been tested in a browser.
+- The local D1 emulator can apply migrations `0001`–`0015`. The remote D1 database and Pages deployment exist; remote migrations `0001`–`0014` are applied and `0015` is pending.
+- The site has not received a visual or authenticated browser check; PWA install/update and public HTTPS behavior remain unverified.
 
-## MY NEXT STEPS
+## Remaining steps
 
-1. **Install GitHub Desktop and Git for Windows.** Sign into your GitHub account in GitHub Desktop. Git is not available in this Codex shell, and the project folder `C:\Users\krish\Documents\Codex\2026-11-05\files-pasted-by-the-user-kin` has no `.git` metadata yet. Node.js is already installed; do not reinstall it.
-2. **Initialize and inspect the local repository.** Open PowerShell in the project folder and run `git init`. In GitHub Desktop select **File > Add Local Repository**, choose this project folder, and inspect **Changes**. Confirm `.dev.vars`, `.env`, `node_modules`, `.wrangler`, `dist`, `work`, databases, backups, APKs, and signing files are not listed. Commit the reviewed source locally.
-3. **Publish to GitHub.** In GitHub Desktop click **Publish repository**, use repository name `kinguardian`, select **Keep this code private**, and click **Publish Repository**. Do not switch it to public until you have reviewed what public source exposure means.
-4. **Connect Cloudflare Pages.** In the Cloudflare dashboard open **Workers & Pages > Create application > Pages > Connect to Git**. Authorize GitHub, select `kinguardian`, and choose the intended production branch (for example, `main`). Git integration is the selected path; Cloudflare does not let a Git-integrated Pages project later switch to Direct Upload.
-5. **Enter the Pages build settings.** Choose **None / Other** as the framework preset, leave the root directory at the repository root, set build command to `npm run build`, build output directory to `dist`, and set `NODE_VERSION=26.13.0`. Set `KG_RELEASE_TYPE=production` for production builds; configure branch previews as `preview`. Review the `wrangler.toml` configuration before the first production deploy.
-6. **Create the database.** In Cloudflare open **D1 SQL database > Create database**, enter `kinguardian-db`, and create it. Copy the returned database UUID into both Wrangler files by replacing only the all-zero `database_id`. Keep both binding names as `DB`.
-7. **Configure bindings and secrets.** Add the Pages `DB` binding to `kinguardian-db`. Add Pages secrets `OWNER_BOOTSTRAP_SECRET` and `AUTH_RATE_LIMIT_SECRET`; use separate random values of at least 32 characters. Set `VAPID_PUBLIC_KEY` as a Pages variable. For `kinguardian-checkin-cron`, bind the same D1 database as `DB` and configure `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` as Worker secrets. Keep the private key only on the Worker.
-8. **Review and migrate production D1.** Before running any `--remote` command, compare all fourteen numbered migrations, confirm the database UUID, and export a backup. Production migration/deployment is not authorized by this guide; get explicit approval before applying migrations or publishing the site.
-9. **Verify HTTPS and the website after authorized deployment.** Open the HTTPS `*.pages.dev` URL, check that HTTP redirects to HTTPS, inspect the browser certificate and console, and review the public pages on phone and desktop sizes. For a custom domain, wait for certificate issuance, then enable Cloudflare **Always Use HTTPS**. Test account creation, pairing, session revocation, PWA install/update, and offline-safe screens with non-sensitive test data before inviting anyone.
-10. **Only after a native app exists, test Android.** Install Android Studio and SDK Build Tools, choose a stable available application ID, build a signed release, verify it with `apksigner`, and generate a SHA-256 checksum with `Get-FileHash`. Scan and test on a spare supported device. Keep the signing key and passwords outside the repository. Distribute only through an official channel, and never ask users to disable Play Protect.
+1. Back up production D1, then apply `0015_cloudflare_password_iterations.sql` with `npx wrangler d1 migrations apply kinguardian-db --remote`. The migration aborts if `users` has any rows.
+2. Build and manually deploy the updated Pages Functions code. Keep the existing production `DB` binding and secrets in Cloudflare.
+3. Open `/api/auth/bootstrap-status`. When `setupAvailable` is `true`, follow [the owner setup steps](DATABASE_GUIDE.md#create-the-first-owner). The internal owner ID is generated automatically; username is `owner`.
+4. Visually inspect the public site and test authenticated flows with non-sensitive test data before inviting anyone. Do not use a real SOS as a test.
+5. The scheduled Worker, VAPID push, and Android APK are not ready for use. Review their setup separately before relying on them.

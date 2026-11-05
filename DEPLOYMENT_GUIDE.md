@@ -1,10 +1,12 @@
-# KinGuardian deployment preflight
+# KinGuardian deployment status and next steps
 
-This guide prepares the M15 Git-connected Cloudflare Pages deployment. No GitHub repository, Cloudflare account integration, remote database, secrets, Pages project, scheduled Worker, or deployment has been created from this workspace.
+The Git-connected Cloudflare Pages project `kinguardian` is deployed at [https://kinguardian.pages.dev/](https://kinguardian.pages.dev/) from the `main` branch. Cloudflare reported a successful deployment after the Root directory field was left blank. The build uses `npm run build` and `dist`.
+
+The D1 database `kinguardian-db` exists. Its UUID is `941f2062-5aad-4e68-ae81-fc1b4fb9d7cb`, and the GitHub Wrangler files now use that UUID. This local project folder is an export without `.git` metadata, so edits made here do not automatically update GitHub. The live D1 migration state and production secrets still need to be checked in the Cloudflare account. The deployed page has not received a visual browser check because the computer-use safety check blocked navigation to it.
 
 ## 1. Finish local verification first
 
-Install [Node.js 26.13.0 LTS for Windows x64](https://nodejs.org/dist/v26.13.0/node-v26.13.0-x64.msi) with npm and PATH enabled, then reopen PowerShell in the project folder. Node.js is now installed in this workspace; its Node test suite, build, and local D1 migration checks have been run successfully here:
+Node.js 26.13.0 is already installed. Open a new PowerShell window in the project folder so `node`, `npm`, and `npx` are available. Do not reinstall Node.js. These are the local checks:
 
 ```powershell
 node --version
@@ -18,42 +20,40 @@ npx wrangler d1 migrations apply kinguardian-db --local
 npm run dev
 ```
 
-All 32 Node.js tests pass. `npm run check:release` builds version 0.1.0 and verifies 45 public asset checksums; `npm audit --audit-level=high` reports zero vulnerabilities. All fourteen migrations are applied to local D1 with none pending. The local preview is running at `http://127.0.0.1:8788`. Open the local address in a regular browser and review the pages at mobile, tablet, and desktop widths. Browser-based visual QA has not been performed because the Codex browser safety check refused to open the local preview. Direct loopback HTTP is blocked from the Codex shell. Wrangler also logs that it cannot resolve `workers.cloudflare.com` for `Request.cf` metadata and uses a placeholder in local mode.
+The Node.js test suite and release check are run after code changes. All fifteen migrations are included in the local schema checks. Start the local preview with `npm run dev`, then open its address in a regular browser; visual QA has not been completed. Wrangler may show placeholder `Request.cf` values in local mode.
 
 For local owner setup, add strong, unique `OWNER_BOOTSTRAP_SECRET` and `AUTH_RATE_LIMIT_SECRET` values to the ignored root `.dev.vars`. To test push locally, generate VAPID keys with `npm run generate:vapid`, put the public key in root `.dev.vars`, and put the public key, private key, and contact subject in `worker/.dev.vars`. Keep private values on your machine.
 
-## 2. Prepare the GitHub source repository
+## 2. Keep the local folder and GitHub in sync
 
-The source is prepared locally, but this folder currently has no `.git` metadata and Git is not available in the Codex shell. Install Git for Windows and GitHub Desktop, initialize a repository in this existing folder, inspect the staged file list against `.gitignore`, and publish it as private. Keep `.dev.vars`, `.env`, `node_modules`, `.wrangler`, `dist`, databases, backups, APKs, and signing keys out of Git. See [RELEASE_SECURITY.md](RELEASE_SECURITY.md) for the exact beginner steps. No repository has been created or published yet.
+The GitHub repository already exists and is connected to Cloudflare Pages. This workspace copy has no `.git` metadata and Git is unavailable in the Codex shell, so changes made here are not pushed to GitHub. Before using any locally edited files, compare them with the GitHub version and upload only the intended source and documentation files. Keep `.dev.vars`, `.env`, `node_modules`, `.wrangler`, `dist`, databases, backups, APKs, and signing keys out of Git. See [RELEASE_SECURITY.md](RELEASE_SECURITY.md) for the exclude list.
 
-Use Git integration when creating the new Cloudflare Pages project. Cloudflare does not allow a Git-integrated project to switch later to Direct Upload, so verify the selected repository, branch, and account before creating the project. See [Cloudflare Git integration](https://developers.cloudflare.com/pages/configuration/git-integration/).
+## 3. Check the remote D1 database
 
-## 3. Configure the remote D1 database
-
-An operator with access to the intended Cloudflare account must sign in with Wrangler and create the required database:
+The remote database already exists. Do not create another one. Both Wrangler files should use the UUID shown above and binding `DB`. To check the remote migration list from your own PowerShell:
 
 ```powershell
 npx wrangler login
-npx wrangler d1 create kinguardian-db
+npx wrangler d1 migrations list kinguardian-db --remote
 ```
 
-Copy the returned database UUID into `database_id` in both `wrangler.toml` and `worker/wrangler.toml`. Keep the database name `kinguardian-db` and binding name `DB`. Do not deploy while either config still contains the all-zero placeholder UUID.
+The list command is read-only. Production D1 migrations `0001`–`0014` are applied and `0015_cloudflare_password_iterations.sql` is pending. A read-only production count found zero user rows. Do not apply `0015` after creating an owner account; its guard stops if users exist.
 
-The Pages config includes `pages_build_output_dir`, so Wrangler uses that file as the Pages deployment configuration. Review it against the intended production settings before publishing; it already has an explicit `2026-11-05` compatibility date and still contains the local placeholder D1 UUID until an authorized operator replaces it. See [Cloudflare Pages Wrangler configuration](https://developers.cloudflare.com/pages/functions/wrangler-configuration/).
+The Pages config includes `pages_build_output_dir`, so Wrangler reads that file for the Pages configuration. Both local Wrangler files now match the D1 UUID used in GitHub. See [Cloudflare Pages Wrangler configuration](https://developers.cloudflare.com/pages/functions/wrangler-configuration/).
 
-Review the remote migration list and the SQL files before any production migration:
+Back up production D1 before the pending production migration:
 
 ```powershell
 npx wrangler d1 migrations list kinguardian-db --remote
 ```
 
-Export and verify a backup before applying schema changes to an existing production database. Applying migrations to production changes remote data and schema and requires explicit production authorization:
+Apply the pending migration before the Pages code deployment:
 
 ```powershell
 npx wrangler d1 migrations apply kinguardian-db --remote
 ```
 
-The current fourteen migrations passed the Node SQLite migration checks and were applied to the local D1 emulator only. They have not been applied to Cloudflare D1.
+Production D1 has migrations `0001`–`0014` applied. Migration `0015_cloudflare_password_iterations.sql` is pending. It safely refuses to run if the `users` table is non-empty; a read-only production count currently shows zero users. Apply it before deploying the matching Pages Functions code.
 
 ## 4. Configure secrets and bindings
 
@@ -73,7 +73,7 @@ The Worker needs the same `DB` binding and:
 
 The Pages bindings are described in `wrangler.toml`; the scheduled Worker binding and Cron schedule are in `worker/wrangler.toml`. Confirm both point to the same production D1 UUID. Add secret values before deploying code that relies on them. Cloudflare documents [Pages bindings and secrets](https://developers.cloudflare.com/pages/functions/bindings/) and [Worker secrets](https://developers.cloudflare.com/workers/configuration/secrets/).
 
-After creating the Pages project, Wrangler can prompt for each Pages secret value without placing it in the command history:
+For the existing Pages project, the simplest way to add secrets is Cloudflare **Workers & Pages > kinguardian > Settings > Variables and Secrets**. Select **Production**, add the secret, choose **Encrypt**, and save. If you use Wrangler instead, these commands prompt for secret values without placing them in command history:
 
 ```powershell
 npx wrangler pages secret put OWNER_BOOTSTRAP_SECRET --project-name kinguardian
@@ -85,20 +85,20 @@ The VAPID public key may instead be configured as a non-secret Pages variable. T
 
 ## 5. Connect Pages to GitHub
 
-In Cloudflare, open **Workers & Pages > Create application > Pages > Connect to Git**. Authorize GitHub, select the private `kinguardian` repository, then choose the production branch. Use these project settings:
+The Pages project is already connected to the GitHub repository `KrishkSingh01/kinguardian` on `main`. Keep these settings in the existing project:
 
 | Setting | Value |
 | --- | --- |
 | Framework preset | None / Other |
-| Root directory | Repository root (default) |
+| Root directory | Leave the Path field empty (Cloudflare uses the repository root) |
 | Build command | `npm run build` |
 | Build output directory | `dist` |
 | `NODE_VERSION` | `26.13.0` |
 | `KG_RELEASE_TYPE` | `production` for production; `preview` for preview branches |
 
-The build keeps `functions/` at the repository root, where Pages discovers Functions; only browser assets are written to `dist/`. The Pages Wrangler config includes `pages_build_output_dir`. Review its D1 binding and compatibility settings against the dashboard before the first deployment, and keep both configuration sources aligned. Do not click **Save and Deploy** until the intended account, repository, D1 UUID, bindings, and secrets have been reviewed and production deployment is explicitly authorized. See [Cloudflare build settings](https://developers.cloudflare.com/pages/configuration/build-configuration/) and [Wrangler Pages configuration](https://developers.cloudflare.com/pages/functions/wrangler-configuration/).
+The build keeps `functions/` at the repository root, where Pages discovers Functions; only browser assets are written to `dist/`. The Pages Wrangler config includes `pages_build_output_dir`. Keep its D1 binding and compatibility settings aligned with the existing Cloudflare project. See [Cloudflare build settings](https://developers.cloudflare.com/pages/configuration/build-configuration/) and [Wrangler Pages configuration](https://developers.cloudflare.com/pages/functions/wrangler-configuration/).
 
-The scheduled Worker is a separate project and is not deployed as part of Pages. After its D1 UUID is correct and its deployment is explicitly authorized, deploy it once before adding Worker secrets. `wrangler secret put` immediately publishes a new Worker version, so the push path remains inactive until all three values are present and valid:
+The scheduled Worker is a separate project and is not deployed as part of Pages. Its D1 UUID is set in the source config, but its deployment and VAPID secrets have not been verified here. `wrangler secret put` immediately publishes a new Worker version, so review the Worker settings and get production authorization before publishing it. The push path remains inactive until all three values are present and valid:
 
 ```powershell
 npm run deploy:checkins
@@ -115,6 +115,36 @@ After an authorized deployment, verify the public app shell and static assets, t
 
 Use the notification test action to validate a deliberately subscribed test device. Do not use a real SOS as a deployment test. Confirm the UI says “provider accepted” only after a push service returns success; it cannot confirm a device displayed a notification. Do not enter real emergency or sensitive personal information until the security and browser review is complete.
 
-## Current M15 status
+## Current status
 
-Local source, the release-security guide, exact Node build version, allow-listed PWA build, and checksum verifier are prepared. The 32-test Node suite passes, the release check verifies 45 assets, npm audit reports zero vulnerabilities, and migrations `0001`–`0014` have been applied to local D1 only. Git is unavailable in this Codex shell and the folder has no `.git` metadata, so the private GitHub repository still needs to be initialized and published by the user. A Cloudflare account operator must still connect GitHub, create the remote D1 database, configure secrets and bindings, review and apply production migrations, and explicitly authorize deployment. No APK exists or has been signed or scanned. Browser visual review and public HTTPS verification remain outstanding. No production resources, secrets, migrations, or deployments have been created or changed.
+- Cloudflare reported that the Pages project deployed successfully to `https://kinguardian.pages.dev/`. The previous failure was caused by entering `repository root` as a folder name; leaving the Root directory Path blank fixed the build.
+- GitHub has the real D1 UUID in both Wrangler files. This local export has now been updated to match.
+- `npm test`: 32 passed, 0 failed. `npm run check:release`: passed with 45 SHA-256-checked public assets. The build used `development` locally; Cloudflare's project form had `KG_RELEASE_TYPE=production`.
+- Current npm advisory status could not be checked because this environment could not resolve `registry.npmjs.org`. Python-only test scripts could not run because Python is not installed in the available shell.
+- Production D1 migrations `0001`–`0014` are applied; `0015_cloudflare_password_iterations.sql` is pending. A read-only production count found zero user rows. Apply `0015` before deploying the updated Pages Functions code. Owner setup has not been completed.
+- The bootstrap and rate-limit secrets are configured well enough for the status endpoint to report setup available; their values were not read. Owner setup remains unused. The scheduled Worker, VAPID push, and authenticated API flows remain unverified. No APK exists or has been signed.
+- Visual verification of the public site remains incomplete because the computer-use safety restriction prevented browser automation.
+
+## Manual production update
+
+Production D1 has migrations `0001`–`0014`; migration `0015_cloudflare_password_iterations.sql` is pending. The current production `users` table is empty. Back up D1 outside the project folder before applying the migration. It refuses to run if any user exists.
+
+In PowerShell, run these commands from the main project folder. They apply the database migration, build and check the production files, then publish the Pages project. Do not create the owner until all steps succeed.
+
+```powershell
+Set-Location 'C:\Users\krish\Downloads\KinGuardian\kinguardian-source-0.1.0\kinguardian'
+$env:Path = 'C:\Program Files\nodejs;' + $env:Path
+npx.cmd wrangler d1 migrations list kinguardian-db --remote
+npx.cmd wrangler d1 migrations apply kinguardian-db --remote
+$env:KG_RELEASE_TYPE = 'production'
+npm.cmd ci
+npm.cmd test
+npm.cmd run check:release
+npx.cmd wrangler pages deploy dist --project-name kinguardian --branch main
+```
+
+Wrangler must already be logged into the intended Cloudflare account. Keep any exported database backup and secret values outside the project and GitHub repository.
+
+This Wrangler command publishes from this folder but does not update GitHub. Before a later GitHub-triggered deployment, also commit the changed source files and migration to the connected repository, or GitHub can publish the older code again.
+
+To create the first owner after confirming migrations, binding, and secrets, follow **Create the first owner** in [DATABASE_GUIDE.md](DATABASE_GUIDE.md). The owner ID is generated automatically; the sign-in username is `owner`.

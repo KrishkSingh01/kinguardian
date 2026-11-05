@@ -14,7 +14,7 @@ Wrangler is a local development dependency in `package.json`.
 
 ## Configure local D1
 
-The root Wrangler config includes a local-only all-zero D1 UUID and `preview_database_id = "DB"`. Cloudflare Pages uses this preview binding for local development. Local setup does not require creating a remote D1 database or signing in to Cloudflare. The first local Wrangler run creates its own local database state; apply migrations with `--local` only.
+The Wrangler files point to the existing Cloudflare D1 database `kinguardian-db` (UUID `941f2062-5aad-4e68-ae81-fc1b4fb9d7cb`). Local Wrangler mode keeps its own separate database state; use `--local` for local development. Local setup does not change the remote database.
 
 ```powershell
 npm run build
@@ -23,7 +23,7 @@ npx wrangler d1 migrations apply kinguardian-db --local
 npm run dev
 ```
 
-Use `npm run dev` to start the Pages preview at `http://localhost:8788`. In this workspace the server reports ready at `http://127.0.0.1:8788`, all fourteen migrations are applied to local D1, and Wrangler reports no pending migrations. The local schema has 30 tables including Wrangler's migration metadata. Visual QA remains pending because the Codex browser refused the preview under its safety restrictions; the shell also blocks direct loopback HTTP requests. Open the address manually in a regular browser. Wrangler currently falls back to a placeholder `Request.cf` object because this environment cannot resolve `workers.cloudflare.com`.
+Use `npm run dev` to start the Pages preview at `http://localhost:8788`. The local emulator can apply all fifteen migrations. Visual QA remains pending because the Codex browser refused the preview under its safety restrictions; the shell also blocks direct loopback HTTP requests. Open the address manually in a regular browser. Wrangler may fall back to a placeholder `Request.cf` object in local mode.
 
 The sign-in and one-time owner setup routes also need local secrets. In a regular PowerShell window, generate two different values:
 
@@ -34,17 +34,18 @@ node -p "require('node:crypto').randomBytes(32).toString('base64url')"
 
 Create an ignored `.dev.vars` file in the project root and enter the first value after `OWNER_BOOTSTRAP_SECRET=` and the second after `AUTH_RATE_LIMIT_SECRET=`. Do not use example strings as credentials, and do not commit `.dev.vars`. These secrets are local-only; production secrets must be configured separately with Wrangler or in Cloudflare settings.
 
-## Create and configure a remote database
+## Check the existing remote database
 
-Sign in to the Cloudflare account that will own the prototype, then run:
+The remote database already exists as `kinguardian-db`. Both Wrangler files use its UUID and the application binding name `DB`. The Cloudflare Pages site is deployed at `https://kinguardian.pages.dev/`.
+
+Production D1 has migrations `0001`–`0014` applied. Migration `0015_cloudflare_password_iterations.sql` is pending. A read-only production count found zero user rows. Apply migration `0015` before deploying the matching account-password code:
 
 ```powershell
-npx wrangler d1 create kinguardian-db
+npx wrangler login
+npx wrangler d1 migrations list kinguardian-db --remote
 ```
 
-This creates a remote D1 database and returns its UUID. Copy that UUID into the `database_id` field in both `wrangler.toml` and `worker/wrangler.toml`, replacing the local-only all-zero value. Keep `database_name = "kinguardian-db"`, `binding = "DB"`, and the Pages `preview_database_id = "DB"` unchanged. Do not copy credentials or the UUID into application JavaScript.
-
-Database creation requires Cloudflare account access. No Cloudflare account, database, or binding has been created from this workspace.
+The list command only checks migration status. Review the migration files and make a remote backup before running `npx wrangler d1 migrations apply kinguardian-db --remote`. Applying the schema to the live database changes production and should only be done after you confirm the correct account and database. Do not create another database with the same name.
 
 The local database is stored by Wrangler under its local state directory. It is separate from the remote database. Cloudflare Pages Functions cannot use a remote D1 database through local preview, so continue to use local mode for development.
 
@@ -62,7 +63,21 @@ Only after reviewing the exact migration files and taking a backup should an aut
 npx wrangler d1 migrations apply kinguardian-db --remote
 ```
 
-Wrangler asks for confirmation interactively and records a backup after applying. This project has not applied remote migrations. [Cloudflare D1 Wrangler commands](https://developers.cloudflare.com/d1/wrangler-commands/)
+Wrangler records migration history after applying. Production migration `0015` must be applied before owner setup. Make a backup first. [Cloudflare D1 Wrangler commands](https://developers.cloudflare.com/d1/wrangler-commands/)
+
+## Create the first owner
+
+You do not create or type an owner ID. The setup page generates a unique internal ID automatically. The sign-in username is `owner`.
+
+1. Back up production D1 and apply migration `0015_cloudflare_password_iterations.sql`. Confirm the Pages project has the `DB` binding to `kinguardian-db`.
+2. In Cloudflare, open **Workers & Pages > kinguardian > Settings > Variables and Secrets**. For the **Production** environment, add two encrypted secrets: `OWNER_BOOTSTRAP_SECRET` and `AUTH_RATE_LIMIT_SECRET`. To make each value in PowerShell, run `node -p "require('node:crypto').randomBytes(32).toString('base64url')"` twice and use a different result for each secret. Do not put either value in GitHub or this chat.
+3. Build and manually deploy the updated Pages Functions after the migration is applied.
+4. Open `https://kinguardian.pages.dev/api/auth/bootstrap-status`. Continue when it returns `"setupAvailable": true`.
+5. Open `https://kinguardian.pages.dev/setup.html`. Enter the value of `OWNER_BOOTSTRAP_SECRET` and create the owner account. The page shows a temporary password once. Save it in a password manager.
+6. Sign in at `https://kinguardian.pages.dev/login.html` with username `owner` and that temporary password. Change the password when prompted.
+7. After setup succeeds, remove the `OWNER_BOOTSTRAP_SECRET` from Cloudflare. Keep `AUTH_RATE_LIMIT_SECRET`; sign-in and other protected API routes still need it.
+
+Owner setup is one-time and the app allows exactly one owner. Do not insert an owner row by hand in D1. `AUTH_RATE_LIMIT_SECRET` is not the value you enter on the setup page. VAPID push keys are not required to create the owner.
 
 ## Inspect tables and data
 
@@ -84,7 +99,7 @@ npx wrangler d1 migrations create kinguardian-db describe_the_change
 
 Write the SQL in the new file, test it locally, and keep it additive and backward-compatible where possible. To add a column, use `ALTER TABLE ... ADD COLUMN ...` in the new migration, then validate existing and new rows. Do not use `DROP`, destructive rewrites, or data-clearing statements without an explicit data-loss review.
 
-The fourteen migrations create the prototype tables and add the encrypted international-contact envelope, default-off location consent, encrypted account-sharing keys, recipient-specific encrypted location envelopes, per-device Web Push delivery state, hash-only account setup tokens, and short-lived device-pairing requests. Safety check-ins use `safety_checkins` and `safety_checkin_recipients`. The scheduled Worker marks overdue check-ins and creates idempotent events, then makes a bounded push attempt when VAPID and recipient consent are configured. A `provider_accepted` status is not a delivery receipt. All fourteen migrations have been applied to the local D1 emulator only; none have been applied remotely.
+The first fourteen migrations create the prototype tables and add the encrypted international-contact envelope, default-off location consent, encrypted account-sharing keys, recipient-specific encrypted location envelopes, per-device Web Push delivery state, hash-only account setup tokens, and short-lived device-pairing requests. Migration `0015_cloudflare_password_iterations.sql` sets the account-password constraint to 100,000 PBKDF2 rounds, the Cloudflare Workers maximum. It stops if any user already exists. Production migrations `0001`–`0014` are applied; `0015` is pending. Safety check-ins use `safety_checkins` and `safety_checkin_recipients`. The scheduled Worker marks overdue check-ins and creates idempotent events, then makes a bounded push attempt when VAPID and recipient consent are configured. A `provider_accepted` status is not a delivery receipt.
 
 As checked on 2026-11-05, the Workers Free plan includes 5 million D1 rows read per day, 100,000 rows written per day, and 5 GB total D1 storage. Queries stop working after the daily read/write cap until 00:00 UTC; the free plan does not silently turn an overage into a paid upgrade. The Worker Cron CPU allowance is 10 ms per invocation, so this prototype sends at most one device push per minute. These limits can delay queued notifications. Check the current [D1 pricing and limits](https://developers.cloudflare.com/d1/platform/pricing/) and [Workers limits](https://developers.cloudflare.com/workers/platform/limits/) before relying on a production schedule.
 
@@ -112,7 +127,7 @@ D1 also provides Time Travel point-in-time recovery. Cloudflare currently lists 
 ## Troubleshooting
 
 - **Wrangler is not found:** run `npm install` in the project folder and use `npx wrangler ...`.
-- **Invalid database ID:** copy the UUID returned by `wrangler d1 create` into both Wrangler files.
+- **Invalid database ID:** confirm that both Wrangler files use the existing UUID `941f2062-5aad-4e68-ae81-fc1b4fb9d7cb`.
 - **Binding not found:** the binding must be exactly `DB` in the Pages and scheduled Worker configurations.
 - **No local data appears:** Wrangler’s local D1 database is separate from remote D1. Confirm you used `--local` consistently and did not change the configured database UUID.
 - **Migrations are pending:** run `npx wrangler d1 migrations list kinguardian-db --local` and apply locally before testing.
