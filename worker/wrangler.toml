@@ -5,10 +5,9 @@ compatibility_date = "2026-11-05"
 [triggers]
 crons = ["*/1 * * * *"]
 
-
 [[d1_databases]]
 binding = "DB"
 database_name = "kinguardian-db"
 # Keep this the same UUID used in the Pages wrangler.toml after database creation.
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "941f2062-5aad-4e68-ae81-fc1b4fb9d7cb"
 migrations_dir = "../migrations"
