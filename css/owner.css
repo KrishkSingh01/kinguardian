@@ -1,4 +1,17 @@
 .owner-manager { grid-column: 1 / -1; }
+.owner-test-bench { margin: 18px 0 22px; border: 1px solid var(--line); border-radius: 16px; padding: 17px; background: var(--paper); }
+.owner-test-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.owner-test-heading .eyebrow { margin: 0 0 4px; }
+.owner-test-heading h4 { margin: 0; color: var(--ink); font-size: .96rem; }
+.owner-test-badge { border: 1px solid var(--line-strong); border-radius: 999px; padding: 5px 8px; color: var(--forest); font-size: .58rem; font-weight: 800; letter-spacing: .08em; }
+.owner-test-bench > p:not(.form-message) { max-width: 680px; margin: 10px 0; color: var(--ink-muted); font-size: .73rem; line-height: 1.55; }
+.owner-test-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 13px; }
+.owner-test-actions .button { min-height: 39px; }
+.owner-test-results { display: grid; gap: 5px; margin: 8px 0 0; padding: 0; list-style: none; }
+.owner-test-results li { display: flex; align-items: flex-start; gap: 8px; color: var(--ink); font-size: .72rem; }
+.owner-test-results li::before { content: "•"; color: var(--forest); font-weight: 900; }
+.owner-test-results [data-state="failed"]::before { color: var(--coral-text); }
+.owner-test-note { border-top: 1px solid var(--line); padding-top: 10px; }
 .owner-account-list-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; border-top: 1px solid var(--line); padding-top: 18px; }
 .owner-account-list-heading h4, .credential-result h4 { margin: 0; color: var(--ink); font-size: .9rem; }
 .owner-account-list { display: grid; gap: 8px; margin: 11px 0 0; padding: 0; list-style: none; }
@@ -11,6 +24,12 @@
 .owner-account-actions .button { min-height: 35px; padding: 6px 10px; font-size: .67rem; }
 .owner-account-empty { color: var(--ink-muted); font-size: .75rem; }
 .owner-manager .form-message { margin-bottom: 0; }
+.recovery-code-form { display: grid; gap: 8px; margin-top: 12px; }
+.recovery-code-form label { color: var(--ink); font-size: .72rem; font-weight: 700; }
+.recovery-code-form input { width: min(100%, 420px); min-height: 42px; border: 1px solid var(--line-strong); border-radius: 10px; padding: 0 12px; background: var(--surface); color: var(--ink); font: inherit; }
+.recovery-codes-result { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 14px; }
+.recovery-codes-result h4 { margin: 0; color: var(--ink); font-size: .82rem; }
+.recovery-code-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 .owner-manager .credential-result { max-width: 540px; }
 .owner-manager .credential-result p { margin: 7px 0 0; color: var(--ink-muted); font-size: .72rem; }
 .owner-manager .credential-result label { display: block; margin-top: 12px; color: var(--ink); font-size: .7rem; font-weight: 700; }

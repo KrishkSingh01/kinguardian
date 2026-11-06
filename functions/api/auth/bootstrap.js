@@ -2,6 +2,7 @@ import { createSession } from "../../_shared/auth.js";
 import { derivePasswordHash, normalizeUsername, PASSWORD_ITERATIONS, randomBytes, randomToken } from "../../_shared/crypto.js";
 import { jsonResponse, readJsonRequest, requirePost, safeError } from "../../_shared/http.js";
 import { isRateLimited, recordFailure } from "../../_shared/rate-limit.js";
+import { createRecoveryCodeSet } from "../../_shared/recovery-codes.js";
 
 export async function onRequestPost(context) {
   const rejected = requirePost(context);
@@ -56,6 +57,7 @@ export async function onRequestPost(context) {
     const salt = randomBytes(16);
     failureStage = "temporary-password hashing";
     const passwordHash = await derivePasswordHash(temporaryPassword, salt, PASSWORD_ITERATIONS);
+    const recovery = await createRecoveryCodeSet();
     const statements = [
       env.DB.prepare(`
         INSERT INTO users (
@@ -74,12 +76,19 @@ export async function onRequestPost(context) {
         VALUES (?, ?, ?, 'owner_bootstrapped', 'succeeded', ?)
       `).bind(crypto.randomUUID(), userId, userId, now),
     ];
+    for (const record of recovery.records) {
+      statements.push(env.DB.prepare(`
+        INSERT INTO account_recovery_codes (recovery_code_id, user_id, code_hash, created_at)
+        VALUES (?, ?, ?, ?)
+      `).bind(record.codeId, userId, record.codeHash, now));
+    }
 
     failureStage = "owner database write";
     await env.DB.batch(statements);
     return jsonResponse({
       user: { userId, username: "owner", role: "owner", mustChangePassword: true },
       temporaryPassword,
+      recoveryCodes: recovery.codes,
       warning: "Copy this temporary password now. It is shown once and must be changed at first sign-in.",
     }, 201);
   } catch (error) {
