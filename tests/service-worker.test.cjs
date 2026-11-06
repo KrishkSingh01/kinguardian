@@ -32,7 +32,7 @@ function createWorkerHarness() {
   if (name.includes("sos.html")) return "offline-sos-page";
   if (name.includes("location.html")) return "offline-location-page";
       if (name.includes("contacts.html")) return "offline-contacts-page";
-      if (name.includes("index.html")) return "offline-shell";
+      if (name.includes("dashboard.html")) return "offline-shell";
       return "cached-static";
     },
   };
@@ -60,18 +60,25 @@ test("service worker caches only the static shell and bypasses APIs", async () =
   let pending;
   worker.handlers.install({ waitUntil: (promise) => { pending = promise; } });
   await pending;
-  assert.equal(worker.installed.length, 40);
-  assert.ok(worker.installed.includes("./account-setup.html"));
-  assert.ok(worker.installed.includes("./app.html"));
-  assert.ok(worker.installed.includes("./css/marketing.css"));
+  assert.equal(worker.installed.length, 41);
+  assert.ok(worker.installed.includes("./dashboard.html"));
+  assert.ok(worker.installed.includes("./privacy.html"));
+  assert.ok(worker.installed.includes("./css/landing.css"));
+  assert.ok(worker.installed.includes("./css/privacy.css"));
+  assert.ok(!worker.installed.includes("./account-setup.html"));
+  assert.ok(!worker.installed.includes("./css/owner.css"));
   assert.ok(worker.installed.includes("./pair-device.html"));
   assert.ok(worker.installed.includes("./css/pair-device.css"));
-  assert.ok(worker.installed.includes("./js/account-setup.js"));
+  assert.ok(!worker.installed.includes("./js/account-setup.js"));
+  assert.ok(!worker.installed.includes("./js/owner.js"));
   assert.ok(worker.installed.includes("./js/pair-device.js"));
   assert.ok(worker.installed.includes("./sos.html"));
   assert.ok(worker.installed.includes("./css/sos.css"));
   assert.ok(worker.installed.includes("./js/sos.js"));
   assert.ok(worker.installed.includes("./location.html"));
+  assert.ok(worker.installed.includes("./emergency.html"));
+  assert.ok(worker.installed.includes("./css/emergency.css"));
+  assert.ok(worker.installed.includes("./js/emergency.js"));
   assert.ok(worker.installed.includes("./css/location.css"));
   assert.ok(worker.installed.includes("./js/location.js"));
   assert.ok(worker.installed.includes("./css/checkins.css"));
@@ -139,7 +146,7 @@ test("push copy is generic and notification clicks stay on the app origin", asyn
   await pending;
   assert.equal(worker.shownNotifications[0].title, "KinGuardian");
   assert.equal(worker.shownNotifications[0].options.body, "A trusted circle member needs your attention.");
-  assert.equal(worker.shownNotifications[0].options.data.path, "/app.html");
+  assert.equal(worker.shownNotifications[0].options.data.path, "/");
   assert.doesNotMatch(worker.shownNotifications[0].options.body, /12\.34|56\.78/u);
 
   worker.handlers.notificationclick({
@@ -147,5 +154,5 @@ test("push copy is generic and notification clicks stay on the app origin", asyn
     waitUntil: (promise) => { pending = promise; },
   });
   await pending;
-  assert.deepEqual(worker.openedWindows, ["https://kin.test/app.html"]);
+  assert.deepEqual(worker.openedWindows, ["https://kin.test/"]);
 });

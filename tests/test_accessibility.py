@@ -62,7 +62,7 @@ def main() -> None:
     if "max-width: 620px" not in notification_css:
         raise AssertionError("Notification settings need a narrow-screen layout")
 
-    index = (ROOT / "app.html").read_text(encoding="utf-8")
+    index = (ROOT / "dashboard.html").read_text(encoding="utf-8")
     desktop_nav = re.findall(r"<button\b[^>]*class=\"nav-item[^>]*>", index)
     if not desktop_nav or any("aria-label=" not in button for button in desktop_nav):
         raise AssertionError("Icon-only tablet navigation buttons need explicit accessible names")

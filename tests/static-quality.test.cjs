@@ -4,7 +4,7 @@ const path = require("node:path");
 const test = require("node:test");
 
 const root = path.join(__dirname, "..");
-const pages = ["index.html", "app.html", "login.html", "register.html", "recover.html", "setup.html", "change-password.html", "account-setup.html", "pair-device.html", "contacts.html", "invite.html", "sos.html", "location.html"];
+const pages = ["index.html", "dashboard.html", "login.html", "register.html", "recover.html", "setup.html", "change-password.html", "account-setup.html", "pair-device.html", "contacts.html", "invite.html", "sos.html", "location.html", "emergency.html", "privacy.html"];
 const source = (filename) => readFileSync(path.join(root, filename), "utf8");
 
 function attributes(tag) {
@@ -70,19 +70,6 @@ test("static pages have valid local resources, labels, and accessible names", ()
   assert.ok(totalIds > 0);
 });
 
-test("the root is a public homepage and the private app shell has its own page", () => {
-  const homepage = source("index.html");
-  const app = source("app.html");
-  assert.match(homepage, /<main id="main-content"/u);
-  assert.match(homepage, /How it works/u);
-  assert.match(homepage, /Trusted contacts/u);
-  assert.match(homepage, /iamkrishk41@gmail\.com/u);
-  assert.match(homepage, /automatic contact alerts are not currently enabled/iu);
-  assert.doesNotMatch(homepage, /id="app-shell"/u);
-  assert.match(app, /id="app-shell"/u);
-  assert.match(app, /src="js\/app\.js"/u);
-});
-
 test("light and dark themes retain contrast, focus, reduced motion, and mobile rules", () => {
   const tokens = source("css/tokens.css");
   const themes = [
@@ -111,9 +98,58 @@ test("light and dark themes retain contrast, focus, reduced motion, and mobile r
   const responsive = source("css/responsive.css");
   for (const breakpoint of ["max-width: 1160px", "max-width: 850px", "max-width: 680px", "max-width: 390px"]) assert.ok(responsive.includes(breakpoint));
   assert.ok(source("css/notifications.css").includes("max-width: 620px"));
-  const navItems = [...source("app.html").matchAll(/<button\b[^>]*class="nav-item[^>]*>/gu)].map((match) => match[0]);
+  const navItems = [...source("dashboard.html").matchAll(/<button\b[^>]*class="nav-item[^>]*>/gu)].map((match) => match[0]);
   assert.ok(navItems.length > 0 && navItems.every((button) => attributes(button)["aria-label"]));
   const cssBytes = readdirSync(path.join(root, "css")).filter((name) => name.endsWith(".css"))
     .reduce((total, name) => total + statSync(path.join(root, "css", name)).size, 0);
   assert.ok(cssBytes <= 200_000, `CSS source weighs ${cssBytes} bytes`);
+});
+
+test("published routes and build exclude legacy owner setup and administration", () => {
+  const routes = JSON.parse(source("_routes.json"));
+  for (const route of ["/api/owner/*", "/api/auth/bootstrap", "/api/auth/bootstrap-status", "/api/auth/setup-password"]) {
+    assert.ok(routes.exclude.includes(route), `${route} must stay disabled in Pages`);
+  }
+  const buildScript = source("tools/build.mjs");
+  for (const legacyAsset of ["setup.html", "account-setup.html", '"owner"', '"setup"', '"account-setup"']) {
+    assert.ok(!buildScript.includes(legacyAsset), `${legacyAsset} must not be copied or bundled`);
+  }
+  const app = source("dashboard.html");
+  assert.ok(!app.includes("data-owner-only"));
+  assert.ok(!app.includes("OWNER TOOLS"));
+  assert.ok(!source("login.html").includes("setup.html"));
+});
+
+test("root page is a public landing page with clear account and emergency paths", () => {
+  const page = source("index.html");
+  assert.match(page, /href="register\.html"/u);
+  assert.match(page, /href="login\.html"/u);
+  assert.match(page, /href="emergency\.html"/u);
+  assert.match(page, /KinGuardian is still a prototype/u);
+  assert.ok(!page.includes('src="js/app.js"'));
+});
+
+test("sign-in and registration offer Turnstile hooks with a strict server-verification policy", () => {
+  for (const [page, id, action] of [["login.html", "login-turnstile", "login"], ["register.html", "register-turnstile", "register"]]) {
+    assert.match(source(page), new RegExp(`id="${id}"[^>]*data-action="${action}"`, "u"));
+  }
+  const server = source("functions/_shared/turnstile.js");
+  assert.ok(server.includes("challenges.cloudflare.com/turnstile/v0/siteverify"));
+  assert.ok(server.includes("hostname === requestUrl.hostname.toLowerCase()"));
+  assert.ok(server.includes("action === expectedAction"));
+  assert.ok(server.includes("mode: \"misconfigured\""));
+  const headers = source("_headers");
+  assert.match(headers, /script-src[^;]*https:\/\/challenges\.cloudflare\.com/u);
+  assert.match(headers, /frame-src https:\/\/challenges\.cloudflare\.com/u);
+});
+
+test("emergency information uses the verified India number and refuses guesses", () => {
+  const page = source("emergency.html");
+  const script = source("js/emergency.js");
+  assert.match(page, /href="tel:112"/u);
+  assert.match(page, /https:\/\/112\.gov\.in\//u);
+  assert.match(page, /mha\.gov\.in\/emergency-response-support-system-erss/u);
+  assert.match(page, /Number not verified here/u);
+  assert.match(script, /country\.value === "india"/u);
+  assert.ok(!script.includes("navigator.geolocation"));
 });

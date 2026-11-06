@@ -17,10 +17,10 @@ const prohibitedExtensions = new Set([
   ".sqlite", ".sqlite3",
 ]);
 const expectedTopLevelFiles = new Set([
-  "_headers", "_routes.json", "account-setup.html", "change-password.html",
-  "contacts.html", "index.html", "app.html", "invite.html", "location.html", "login.html", "register.html", "recover.html",
+  "_headers", "_routes.json", "change-password.html",
+  "contacts.html", "dashboard.html", "emergency.html", "index.html", "invite.html", "location.html", "login.html", "register.html", "recover.html", "privacy.html",
   "manifest.webmanifest", "pair-device.html", "release-manifest.json",
-  "service-worker.js", "setup.html", "sos.html",
+  "service-worker.js", "sos.html",
 ]);
 
 const workspaceFiles = await listFiles(projectRoot);
@@ -123,8 +123,15 @@ for (const filename of expectedPublicFiles) {
 }
 
 const routes = JSON.parse(await readFile(path.join(publicRoot, "_routes.json"), "utf8"));
-if (JSON.stringify(routes) !== JSON.stringify({ version: 1, include: ["/api/*"], exclude: [] })) {
-  fail("Public Pages routing must send only /api/* through Pages Functions.");
+const disabledOwnerRoutes = [
+  "/api/owner/*", "/api/auth/bootstrap", "/api/auth/bootstrap-status", "/api/auth/setup-password",
+];
+if (routes.version !== 1 || JSON.stringify(routes.include) !== JSON.stringify(["/api/*"])
+  || disabledOwnerRoutes.some((route) => !routes.exclude?.includes(route))) {
+  fail("Public Pages routing must include /api/* and exclude legacy owner/setup endpoints.");
+}
+for (const filename of ["setup.html", "account-setup.html", "js/owner.js", "js/setup.js", "js/account-setup.js", "css/owner.css"]) {
+  if (actualPublicFiles.includes(filename)) fail(`Legacy owner/setup asset must not ship: ${filename}`);
 }
 
 console.log(`PASS: ${manifest.application} ${manifest.version} (${manifest.releaseType}); ${manifest.assets.length} public assets have matching SHA-256 values; private/server build files and known credential patterns were not found.`);

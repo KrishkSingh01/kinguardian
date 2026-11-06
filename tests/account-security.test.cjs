@@ -24,6 +24,17 @@ function addUser(db, id, username, role) {
   `).run(id, username, role, Buffer.from("hash"), Buffer.from("salt"));
 }
 
+test("secure sessions persist across normal restarts with a bounded fourteen-day lifetime", async () => {
+  const { createSessionCredentials, sessionCookies } = await import(pathToFileURL(path.join(root, "functions", "_shared", "auth.js")));
+  const now = Date.UTC(2026, 10, 6);
+  const credentials = await createSessionCredentials(now);
+  const expectedDuration = 14 * 24 * 60 * 60 * 1000;
+  assert.equal(credentials.expiresAt, now + expectedDuration);
+  const cookies = sessionCookies(credentials.token, credentials.csrfToken);
+  assert.ok(cookies.some((cookie) => cookie.includes("HttpOnly") && cookie.includes("Secure")
+    && cookie.includes("SameSite=Strict") && cookie.includes("Max-Age=1209600")));
+});
+
 test("all numbered migrations include constrained setup and pairing tables", () => {
   const db = migratedDatabase();
   const tables = new Set(db.prepare("SELECT name FROM sqlite_schema WHERE type = 'table'").all().map((row) => row.name));
@@ -159,12 +170,12 @@ test("owner and pairing route SQL compiles against all migrations", () => {
   db.close();
 });
 
-test("public registration always creates a normal member and protects the owner name", () => {
+test("public registration always creates a normal member and does not reserve an admin username", () => {
   const registration = readFileSync(path.join(root, "functions", "api", "auth", "register.js"), "utf8");
   assert.ok(registration.includes("requirePost(context)"));
   assert.ok(registration.includes("normalizeUsername(body.username)"));
   assert.ok(registration.includes("validatePassword(body.password)"));
-  assert.ok(registration.includes("username === \"owner\""));
+  assert.ok(!registration.includes("username === \"owner\""));
   assert.match(registration, /VALUES\s*\([\s\S]*?'member'[\s\S]*?\)/u);
   assert.ok(!registration.includes("body.role"), "registration must not accept a role from the browser");
   assert.ok(registration.includes("recordAttempt(env, addressBucket, ADDRESS_LIMIT)"));
@@ -209,17 +220,17 @@ test("public registration ignores a requested owner role and starts a member ses
       "content-type": "application/json",
       "cf-connecting-ip": "203.0.113.20",
     },
-    body: JSON.stringify({ username: "NewMember", password: "a strong test passphrase", role: "owner" }),
+    body: JSON.stringify({ username: "owner", password: "a strong test passphrase", role: "owner" }),
   });
   const response = await onRequestPost({ request, env });
   const body = await response.json();
   assert.equal(response.status, 201);
-  assert.equal(body.user.username, "newmember");
+  assert.equal(body.user.username, "owner");
   assert.equal(body.user.role, "member");
   assert.equal(body.user.mustChangePassword, false);
   assert.equal(insertedUsers.length, 1);
   assert.match(insertedUsers[0].sql, /'member'/u);
-  assert.equal(insertedUsers[0].values[1], "newmember");
+  assert.equal(insertedUsers[0].values[1], "owner");
   assert.equal(insertedUsers[0].values[2], 100_000);
   assert.equal(insertedSessions.length, 1);
   assert.equal(insertedRecoveryCodes.length, 10);

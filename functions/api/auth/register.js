@@ -3,6 +3,7 @@ import { derivePasswordHash, normalizeUsername, PASSWORD_ITERATIONS, randomBytes
 import { jsonResponse, readJsonRequest, requirePost, safeError } from "../../_shared/http.js";
 import { isRateLimited, recordAttempt } from "../../_shared/rate-limit.js";
 import { createRecoveryCodeSet } from "../../_shared/recovery-codes.js";
+import { turnstileFailureResponse, verifyTurnstile } from "../../_shared/turnstile.js";
 
 const ADDRESS_LIMIT = 10;
 const USERNAME_LIMIT = 5;
@@ -25,7 +26,7 @@ export async function onRequestPost(context) {
 
     const body = await readJsonRequest(request, 4096);
     const username = normalizeUsername(body.username);
-    if (!username || username === "owner" || !validatePassword(body.password)) {
+    if (!username || !validatePassword(body.password)) {
       return jsonResponse({ error: { code: "INVALID_REGISTRATION", message: "Choose a valid username and a password with at least 12 characters." } }, 400);
     }
 
@@ -33,6 +34,10 @@ export async function onRequestPost(context) {
     if (await isRateLimited(env, usernameBucket)) {
       return jsonResponse({ error: { code: "RATE_LIMITED", message: "Too many requests for this username. Wait and try again." } }, 429);
     }
+
+    const botCheck = await verifyTurnstile({ env, request, token: body.turnstileToken, expectedAction: "register" });
+    const botCheckFailure = turnstileFailureResponse(botCheck, jsonResponse);
+    if (botCheckFailure) return botCheckFailure;
     await recordAttempt(env, usernameBucket, USERNAME_LIMIT);
 
     const salt = randomBytes(16);

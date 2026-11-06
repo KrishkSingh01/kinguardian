@@ -2,6 +2,7 @@ import { clearRateLimit, isRateLimited, recordFailure } from "../../_shared/rate
 import { createSession, sessionCookies } from "../../_shared/auth.js";
 import { constantTimeEqual, derivePasswordHash, normalizeUsername, PASSWORD_ITERATIONS } from "../../_shared/crypto.js";
 import { jsonResponse, readJsonRequest, requirePost, safeError } from "../../_shared/http.js";
+import { turnstileFailureResponse, verifyTurnstile } from "../../_shared/turnstile.js";
 
 const USER_LIMIT = 5;
 const ADDRESS_LIMIT = 20;
@@ -26,6 +27,10 @@ export async function onRequestPost(context) {
     if (await isRateLimited(env, userBucket) || await isRateLimited(env, addressBucket)) {
       return jsonResponse({ error: { code: "RATE_LIMITED", message: "Wait before trying to sign in again." } }, 429);
     }
+
+    const botCheck = await verifyTurnstile({ env, request, token: body.turnstileToken, expectedAction: "login" });
+    const botCheckFailure = turnstileFailureResponse(botCheck, jsonResponse);
+    if (botCheckFailure) return botCheckFailure;
 
     const user = await env.DB.prepare(`
       SELECT user_id, username, role, account_status, password_algorithm,

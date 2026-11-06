@@ -3,7 +3,7 @@ import { constantTimeEqual, randomToken, sha256 } from "./crypto.js";
 
 const SESSION_COOKIE = "__Host-kg_session";
 const CSRF_COOKIE = "__Host-kg_csrf";
-const SESSION_DURATION_MS = 8 * 60 * 60 * 1000;
+const SESSION_DURATION_MS = 14 * 24 * 60 * 60 * 1000;
 const LAST_SEEN_INTERVAL_MS = 15 * 60 * 1000;
 
 export function passwordCookie(token) {
