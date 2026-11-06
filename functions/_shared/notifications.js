@@ -3,8 +3,7 @@ import { fromBase64Url } from "./crypto.js";
 export const NOTIFICATION_CATEGORIES = Object.freeze({
   sos: "sos_enabled",
   invitations: "invitations_enabled",
-  checkinReminders: "checkin_reminders_enabled",
-  missedCheckins: "missed_checkins_enabled",
+  safeJourneys: "safe_journeys_enabled",
   acknowledgements: "acknowledgements_enabled",
   accountSecurity: "account_security_enabled",
 });

@@ -6,14 +6,12 @@ export function getTurnstileConfiguration(env) {
   const siteKey = typeof env.TURNSTILE_SITE_KEY === "string" ? env.TURNSTILE_SITE_KEY.trim() : "";
   const secretKey = typeof env.TURNSTILE_SECRET_KEY === "string" ? env.TURNSTILE_SECRET_KEY.trim() : "";
 
-  if (!siteKey && !secretKey) return { mode: "off", siteKey: null };
   if (siteKey && secretKey) return { mode: "enabled", siteKey };
   return { mode: "misconfigured", siteKey: null };
 }
 
 export async function verifyTurnstile({ env, request, token, expectedAction, fetchImpl = fetch }) {
   const configuration = getTurnstileConfiguration(env);
-  if (configuration.mode === "off") return { ok: true, required: false };
   if (configuration.mode === "misconfigured") return { ok: false, unavailable: true };
   if (typeof token !== "string" || token.length === 0 || token.length > MAX_TOKEN_LENGTH) {
     return { ok: false, unavailable: false };
