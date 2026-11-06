@@ -15,8 +15,12 @@ export async function onRequestPost(context) {
       context.env.DB.prepare(`UPDATE location_shares SET share_status = 'stopped', stopped_at = ?
         WHERE share_id = ? AND owner_user_id = ? AND share_status = 'active' AND expires_at > ?`)
         .bind(now, context.params.share_id, session.user.user_id, now),
-      context.env.DB.prepare("DELETE FROM encrypted_location_envelopes WHERE share_id = ? AND changes() = 1")
-        .bind(context.params.share_id),
+      context.env.DB.prepare(`DELETE FROM encrypted_location_envelopes WHERE share_id = ? AND EXISTS (
+        SELECT 1 FROM location_shares WHERE share_id = ? AND owner_user_id = ? AND share_status = 'stopped'
+      )`).bind(context.params.share_id, context.params.share_id, session.user.user_id),
+      context.env.DB.prepare(`DELETE FROM location_share_points WHERE share_id = ? AND EXISTS (
+        SELECT 1 FROM location_shares WHERE share_id = ? AND owner_user_id = ? AND share_status = 'stopped'
+      )`).bind(context.params.share_id, context.params.share_id, session.user.user_id),
     ]);
     if (!result[0]?.meta?.changes) {
       const existing = await context.env.DB.prepare(

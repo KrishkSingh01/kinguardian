@@ -1,5 +1,5 @@
 import { requireSession } from "../../../_shared/auth.js";
-import { fromBase64Url } from "../../../_shared/crypto.js";
+import { encryptLocationPoint } from "../../../_shared/location-crypto.js";
 import { jsonResponse, readJsonRequest, requirePost, safeError } from "../../../_shared/http.js";
 
 function validId(value) {
@@ -14,78 +14,59 @@ export async function onRequestPost(context) {
     const session = await requireSession(context, { write: true });
     if (session.response) return session.response;
     const shareId = context.params.share_id;
-    const body = await readJsonRequest(context.request, 32_768);
-    if (!validId(shareId) || !Array.isArray(body.entries) || body.entries.length < 1 || body.entries.length > 20) {
-      return jsonResponse({ error: { code: "INVALID_LOCATION_UPDATE", message: "The encrypted location update is not valid." } }, 400);
-    }
-    const parsed = body.entries.map((entry) => ({
-      recipientUserId: entry.recipientUserId,
-      senderPublicKey: fromBase64Url(entry.senderPublicKey, { minimumBytes: 65, maximumBytes: 65 }),
-      hkdfSalt: fromBase64Url(entry.hkdfSalt, { minimumBytes: 32, maximumBytes: 32 }),
-      ciphertext: fromBase64Url(entry.ciphertext, { minimumBytes: 17, maximumBytes: 4096 }),
-      iv: fromBase64Url(entry.iv, { minimumBytes: 12, maximumBytes: 12 }),
-    }));
-    if (parsed.some((entry) => !validId(entry.recipientUserId) || !entry.senderPublicKey
-      || !entry.hkdfSalt || !entry.ciphertext || !entry.iv)
-      || new Set(parsed.map((entry) => entry.recipientUserId)).size !== parsed.length) {
-      return jsonResponse({ error: { code: "INVALID_LOCATION_UPDATE", message: "The encrypted location update is not valid." } }, 400);
-    }
+    if (!validId(shareId)) return jsonResponse({ error: { code: "SHARE_NOT_FOUND", message: "That location share was not found." } }, 404);
+    const body = await readJsonRequest(context.request, 2048);
     const now = Date.now();
-    const share = await context.env.DB.prepare(`
-      SELECT share_id FROM location_shares
-      WHERE share_id = ? AND owner_user_id = ? AND share_status = 'active' AND expires_at > ?
+    const capturedAt = body.capturedAt;
+    if (!Number.isFinite(body.latitude) || Math.abs(body.latitude) > 90
+      || !Number.isFinite(body.longitude) || Math.abs(body.longitude) > 180
+      || !Number.isFinite(body.accuracy) || body.accuracy < 0 || body.accuracy > 100_000
+      || !Number.isSafeInteger(capturedAt) || capturedAt < now - 7 * 24 * 60 * 60_000 || capturedAt > now + 60_000) {
+      return jsonResponse({ error: { code: "INVALID_LOCATION_UPDATE", message: "The location point is invalid or too old. Get a fresh location and try again." } }, 400);
+    }
+
+    const db = context.env.DB;
+    const share = await db.prepare(`
+      SELECT s.share_id FROM location_shares AS s
+      WHERE s.share_id = ? AND s.owner_user_id = ? AND s.share_status = 'active' AND s.expires_at > ?
+        AND EXISTS (
+          SELECT 1 FROM location_share_recipients AS r
+          JOIN users AS recipient ON recipient.user_id = r.recipient_user_id AND recipient.account_status = 'active'
+          JOIN trusted_connections AS c ON c.connection_status = 'accepted'
+            AND ((c.user_low_id = s.owner_user_id AND c.user_high_id = r.recipient_user_id)
+              OR (c.user_high_id = s.owner_user_id AND c.user_low_id = r.recipient_user_id))
+          JOIN trusted_connection_preferences AS p ON p.connection_id = c.connection_id
+            AND p.recipient_user_id = r.recipient_user_id AND p.receive_location = 1
+          WHERE r.share_id = s.share_id
+        )
     `).bind(shareId, session.user.user_id, now).first();
-    if (!share) return jsonResponse({ error: { code: "SHARE_NOT_ACTIVE", message: "This location share has stopped or expired." } }, 409);
+    if (!share) return jsonResponse({ error: { code: "SHARE_NOT_ACTIVE", message: "This location share stopped, expired, or no longer has an approved recipient." } }, 409);
 
-    const allowedRows = await context.env.DB.prepare(`
-      SELECT r.recipient_user_id
-      FROM location_share_recipients AS r
-      JOIN users AS recipient ON recipient.user_id = r.recipient_user_id AND recipient.account_status = 'active'
-      JOIN trusted_connections AS c ON c.connection_status = 'accepted'
-        AND ((c.user_low_id = ? AND c.user_high_id = recipient.user_id)
-          OR (c.user_high_id = ? AND c.user_low_id = recipient.user_id))
-      JOIN trusted_connection_preferences AS p
-        ON p.connection_id = c.connection_id AND p.recipient_user_id = recipient.user_id
-        AND p.receive_location = 1
-      WHERE r.share_id = ?
-    `).bind(session.user.user_id, session.user.user_id, shareId).all();
-    const allowed = new Set((allowedRows.results || []).map((row) => row.recipient_user_id));
-    if (allowed.size !== parsed.length || parsed.some((entry) => !allowed.has(entry.recipientUserId))) {
-      return jsonResponse({ error: { code: "RECIPIENT_CHANGED", message: "A selected member's location-sharing consent changed. Stop and review this share." } }, 409);
+    const point = {
+      latitude: body.latitude,
+      longitude: body.longitude,
+      accuracy: body.accuracy,
+      capturedAt,
+      source: "browser location",
+    };
+    const encrypted = await encryptLocationPoint(context.env, shareId, session.user.user_id, point);
+    const write = await db.prepare(`
+      INSERT INTO location_share_points (share_id, location_time, encrypted_point, iv, updated_at)
+      SELECT ?, ?, ?, ?, ? WHERE NOT EXISTS (
+        SELECT 1 FROM location_share_points WHERE share_id = ? AND location_time >= ?
+      )
+      ON CONFLICT (share_id, location_time) DO NOTHING
+    `).bind(shareId, capturedAt, encrypted.ciphertext, encrypted.iv, now, shareId, capturedAt).run();
+    if (write.meta?.changes !== 1) {
+      const latest = await db.prepare("SELECT MAX(location_time) AS location_time FROM location_share_points WHERE share_id = ?")
+        .bind(shareId).first();
+      return jsonResponse({ updated: false, updatedAt: latest?.location_time || null,
+        message: "A newer location is already saved. The older point was not used." });
     }
-
-    const statements = parsed.map((entry) => context.env.DB.prepare(`
-      INSERT INTO encrypted_location_envelopes (
-        share_id, recipient_user_id, sender_public_key, hkdf_salt,
-        location_ciphertext, location_iv, updated_at
-      ) SELECT ?, ?, ?, ?, ?, ?, ? WHERE EXISTS (
-        SELECT 1 FROM location_share_recipients AS r
-        JOIN location_shares AS s ON s.share_id = r.share_id
-        JOIN users AS recipient ON recipient.user_id = r.recipient_user_id
-          AND recipient.account_status = 'active'
-        JOIN trusted_connections AS c ON c.connection_status = 'accepted'
-          AND ((c.user_low_id = s.owner_user_id AND c.user_high_id = r.recipient_user_id)
-            OR (c.user_high_id = s.owner_user_id AND c.user_low_id = r.recipient_user_id))
-        JOIN trusted_connection_preferences AS p
-          ON p.connection_id = c.connection_id AND p.recipient_user_id = r.recipient_user_id
-          AND p.receive_location = 1
-        WHERE r.share_id = ? AND r.recipient_user_id = ?
-          AND s.owner_user_id = ? AND s.share_status = 'active' AND s.expires_at > ?
-          AND EXISTS (SELECT 1 FROM user_sharing_keys AS owner_key
-            WHERE owner_key.user_id = s.owner_user_id AND owner_key.public_key = ?)
-      ) ON CONFLICT (share_id, recipient_user_id) DO UPDATE SET
-        sender_public_key = excluded.sender_public_key,
-        hkdf_salt = excluded.hkdf_salt,
-        location_ciphertext = excluded.location_ciphertext,
-        location_iv = excluded.location_iv,
-        updated_at = excluded.updated_at
-    `).bind(shareId, entry.recipientUserId, entry.senderPublicKey, entry.hkdfSalt,
-      entry.ciphertext, entry.iv, now, shareId, entry.recipientUserId, session.user.user_id, now, entry.senderPublicKey));
-    const results = await context.env.DB.batch(statements);
-    if (results.filter((result) => result?.meta?.changes === 1).length !== parsed.length) {
-      return jsonResponse({ error: { code: "RECIPIENT_CHANGED", message: "A selected member's sharing preference changed. Stop and review this share." } }, 409);
-    }
-    return jsonResponse({ updated: true, updatedAt: now, recipients: parsed.length });
+    await db.prepare(`DELETE FROM location_share_points WHERE share_id = ? AND location_time NOT IN (
+      SELECT location_time FROM location_share_points WHERE share_id = ? ORDER BY location_time DESC LIMIT 60
+    )`).bind(shareId, shareId).run();
+    return jsonResponse({ updated: true, updatedAt: capturedAt });
   } catch (error) {
     return safeError(error);
   }

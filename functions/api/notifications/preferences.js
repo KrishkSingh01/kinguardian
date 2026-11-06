@@ -18,14 +18,13 @@ export async function onRequestPost(context) {
     const now = Date.now();
     await context.env.DB.prepare(`
       INSERT INTO notification_preferences (
-        user_id, sos_enabled, invitations_enabled, checkin_reminders_enabled,
-        missed_checkins_enabled, acknowledgements_enabled, account_security_enabled, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        user_id, sos_enabled, invitations_enabled, safe_journeys_enabled,
+        acknowledgements_enabled, account_security_enabled, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT (user_id) DO UPDATE SET
         sos_enabled = excluded.sos_enabled,
         invitations_enabled = excluded.invitations_enabled,
-        checkin_reminders_enabled = excluded.checkin_reminders_enabled,
-        missed_checkins_enabled = excluded.missed_checkins_enabled,
+        safe_journeys_enabled = excluded.safe_journeys_enabled,
         acknowledgements_enabled = excluded.acknowledgements_enabled,
         account_security_enabled = excluded.account_security_enabled,
         updated_at = excluded.updated_at

@@ -1,20 +1,7 @@
-import {
-  createSharingIdentity,
-  decryptLocationEnvelope,
-  encryptLocationForRecipient,
-  unlockSharingIdentity,
-  unlockVault,
-} from "./encryption.js";
 import { requestJson, showMessage } from "./auth-client.js";
+import { cacheOfflineProfile, getOfflineProfile, getOfflineRecord, putOfflineRecord } from "./offline-store.js";
+import "./map-experience.js";
 
-const vaultCard = document.querySelector("#location-vault-card");
-const vaultForm = document.querySelector("#location-vault-form");
-const vaultHeading = document.querySelector("#location-vault-heading");
-const vaultCopy = document.querySelector("#location-vault-copy");
-const vaultMessage = document.querySelector("#location-vault-message");
-const vaultPassphrase = document.querySelector("#location-vault-passphrase");
-const vaultUnlock = document.querySelector("#location-vault-unlock");
-const workspace = document.querySelector("#location-workspace");
 const recipientList = document.querySelector("#location-recipient-list");
 const recipientEmpty = document.querySelector("#location-recipient-empty");
 const startButton = document.querySelector("#start-location-share");
@@ -24,420 +11,413 @@ const ownShareEmpty = document.querySelector("#own-share-empty");
 const incomingShareList = document.querySelector("#incoming-share-list");
 const incomingShareEmpty = document.querySelector("#incoming-share-empty");
 const coordinateReadout = document.querySelector("#location-coordinate-readout");
-const ownerMapLink = document.querySelector("#owner-map-link");
-
+const ownMapLink = document.querySelector("#owner-map-link");
 const UPDATE_INTERVAL_MS = 60_000;
-const STALE_AFTER_MS = 5 * 60_000;
-const PRIVATE_KEY_IDLE_MS = 15 * 60_000;
+const REFRESH_INTERVAL_MS = 30_000;
 const POSITION_OPTIONS = { enableHighAccuracy: false, maximumAge: 30_000, timeout: 15_000 };
 
 let signedInUser;
-let vaultMetadata;
-let sharingIdentity;
 let trustedRecipients = [];
+let ownShares = [];
 let currentShareId;
 let currentRecipients = [];
 let updateTimer;
-let idleLockTimer;
-let ownShares = [];
-let locationPausedForConsentChange = false;
+let refreshTimer;
 let isPublishing = false;
 
 startButton.addEventListener("click", startLocationShare);
 document.querySelector("#refresh-location").addEventListener("click", loadLocationShares);
 ownShareList.addEventListener("click", handleOwnShareAction);
 incomingShareList.addEventListener("click", handleIncomingShareAction);
-vaultForm.addEventListener("submit", unlockLocationVault);
-window.addEventListener("pointerdown", resetPrivateKeyTimer);
-window.addEventListener("keydown", resetPrivateKeyTimer);
 document.addEventListener("visibilitychange", handleVisibilityChange);
-window.addEventListener("pagehide", () => {
-  stopPositionUpdates();
-  sharingIdentity = undefined;
-  vaultMetadata = undefined;
-  clearTimeout(idleLockTimer);
-  coordinateReadout.hidden = true;
-  ownerMapLink.hidden = true;
+window.addEventListener("pagehide", stopPositionUpdates);
+window.addEventListener("kinguardian:location-found", (event) => { void saveLastKnownPoint(event.detail); });
+window.addEventListener("online", async () => {
+  if (!signedInUser) return;
+  await Promise.all([loadLocationShares(), loadSOSLocations()]);
+  startPositionUpdates();
+  scheduleRefresh();
 });
+window.addEventListener("offline", () => showMessage(locationMessage, "You are offline. New shares cannot reach trusted people; cached locations are marked with their saved time.", "pending"));
 void initialize();
 
 async function initialize() {
   try {
     const { user } = await requestJson("/api/auth/me");
     signedInUser = user;
-    if (user.mustChangePassword) {
-      location.replace("change-password.html");
-      return;
-    }
-    const response = await requestJson("/api/vault");
-    vaultMetadata = response.vault;
-    if (!vaultMetadata) {
-      vaultHeading.textContent = "Create your private vault first";
-      vaultCopy.textContent = "The private vault encrypts contact details and holds the account's encrypted location-sharing key. Create it before starting location sharing.";
-      showMessage(vaultMessage, "No encrypted private vault exists for this account yet.");
-      return;
-    }
-    vaultHeading.textContent = "Unlock your private location key";
-    vaultCopy.textContent = "Enter the separate passphrase for your encrypted contacts vault. This unlocks the location-sharing key only in this browser. No location is requested until you choose members and press Start.";
-    vaultForm.hidden = false;
+    if (user.mustChangePassword) { location.replace("change-password.html"); return; }
+    cacheOfflineProfile(user);
+    showWorkspace();
+    await loadRecipients();
+    await loadLocationShares();
+    await loadSOSLocations();
+    await showCachedPoint();
+    if (navigator.onLine) { startPositionUpdates(); scheduleRefresh(); }
   } catch (error) {
-    vaultHeading.textContent = "Private location sharing is unavailable";
-    showMessage(vaultMessage, error.status === 401
-      ? "Your sign-in has expired. Sign in again before opening private location sharing."
-      : error.message || "KinGuardian could not check your private vault.");
-    if (error.status === 401) location.replace("login.html");
-    if (error.code === "PASSWORD_CHANGE_REQUIRED") location.replace("change-password.html");
+    if (error.status === 401) { location.replace("login.html"); return; }
+    signedInUser = getOfflineProfile();
+    if (!signedInUser) {
+      showMessage(locationMessage, "Sign in on this device once to use location sharing. In immediate danger, call your local emergency service.");
+      return;
+    }
+    showWorkspace();
+    startButton.disabled = true;
+    await renderCachedPeople();
+    await renderCachedLocationShares();
+    await showCachedPoint();
+    await showCachedSOSLocations();
+    showMessage(locationMessage, "Offline mode. Saved locations are shown with their saved time. Sharing starts again only after you reconnect.", "pending");
   }
 }
 
-async function unlockLocationVault(event) {
-  event.preventDefault();
-  vaultUnlock.disabled = true;
-  showMessage(vaultMessage, "Unlocking your private location key…", "busy");
-  try {
-    const dataKey = await unlockVault(vaultPassphrase.value, signedInUser.userId, vaultMetadata);
-    vaultPassphrase.value = "";
-    let { identity } = await requestJson("/api/vault/identity");
-    if (!identity) {
-      const created = await createSharingIdentity(dataKey, signedInUser.userId);
-      try {
-        await requestJson("/api/vault/identity", { method: "POST", body: created.record });
-        identity = created.record;
-      } catch (error) {
-        if (error.code !== "SHARING_KEY_EXISTS") throw error;
-        ({ identity } = await requestJson("/api/vault/identity"));
-      }
-    }
-    sharingIdentity = await unlockSharingIdentity(dataKey, signedInUser.userId, identity);
-    vaultCard.hidden = true;
-    workspace.hidden = false;
-    resetPrivateKeyTimer();
-    showMessage(locationMessage, "Private location key unlocked. No location is shared until you choose members and start.", "success");
-    await Promise.all([loadRecipients(), loadLocationShares()]);
-  } catch (error) {
-    sharingIdentity = undefined;
-    showMessage(vaultMessage, error.message || "The private location key could not be unlocked.");
-    vaultPassphrase.focus();
-  } finally {
-    vaultUnlock.disabled = false;
-  }
-}
-
-function resetPrivateKeyTimer() {
-  if (!sharingIdentity) return;
-  clearTimeout(idleLockTimer);
-  idleLockTimer = window.setTimeout(lockPrivateKey, PRIVATE_KEY_IDLE_MS);
-}
-
-function lockPrivateKey() {
-  stopPositionUpdates();
-  sharingIdentity = undefined;
-  coordinateReadout.hidden = true;
-  ownerMapLink.hidden = true;
-  workspace.hidden = true;
-  vaultCard.hidden = false;
-  vaultForm.hidden = false;
-  showMessage(vaultMessage, "The location key was locked after inactivity. An active share will stop updating; its last point will expire automatically.", "success");
+function showWorkspace() {
+  document.querySelector("#location-workspace").hidden = false;
 }
 
 async function loadRecipients() {
+  const { connections } = await requestJson("/api/connections");
+  trustedRecipients = (connections || []).filter((connection) => connection.receiveLocation === true);
+  await putOfflineRecord(signedInUser.userId, "connections", connections || []).catch(() => undefined);
+  renderRecipients(trustedRecipients);
+}
+
+async function renderCachedPeople() {
+  const connections = await getOfflineRecord(signedInUser.userId, "connections").catch(() => []);
+  trustedRecipients = (connections || []).filter((connection) => connection.receiveLocation === true);
+  renderRecipients(trustedRecipients);
+}
+
+function renderRecipients(recipients) {
   recipientList.replaceChildren();
-  trustedRecipients = [];
-  try {
-    const { connections } = await requestJson("/api/connections");
-    trustedRecipients = connections.filter((connection) => connection.receiveLocation && connection.locationPublicKey);
-    const notReady = connections.filter((connection) => connection.receiveLocation && !connection.locationPublicKey).length;
-    recipientEmpty.hidden = trustedRecipients.length > 0;
-    if (notReady && trustedRecipients.length === 0) {
-      recipientEmpty.textContent = `${notReady} member${notReady === 1 ? " has" : "s have"} opted in but need to unlock the location page once to create a private sharing key.`;
-    } else {
-      recipientEmpty.textContent = "No members are ready to receive encrypted location. Both people must enable location in their circle preferences and unlock the location page once.";
-    }
-    for (const connection of trustedRecipients) {
-      const item = document.createElement("li");
-      const label = document.createElement("label");
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.name = "location-recipient";
-      checkbox.value = connection.userId;
-      const copy = document.createElement("span");
-      const name = document.createElement("strong");
-      name.textContent = connection.username;
-      const note = document.createElement("small");
-      note.textContent = "Opted in · encrypted for this member's private key";
-      copy.append(name, note);
-      label.append(checkbox, copy);
-      item.append(label);
-      recipientList.append(item);
-    }
-  } catch (error) {
-    showMessage(locationMessage, error.message || "Trusted recipients could not be loaded.");
+  recipientEmpty.hidden = recipients.length > 0;
+  for (const recipient of recipients) {
+    const item = document.createElement("li");
+    const label = document.createElement("label");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.name = "location-recipient";
+    checkbox.value = recipient.userId;
+    const copy = document.createElement("span");
+    const name = document.createElement("strong");
+    name.textContent = `@${recipient.username}`;
+    const note = document.createElement("small");
+    note.textContent = "Has allowed you to share your location";
+    copy.append(name, note);
+    label.append(checkbox, copy);
+    item.append(label);
+    recipientList.append(item);
   }
 }
 
 function selectedRecipients() {
-  const ids = new Set([...recipientList.querySelectorAll('input[name="location-recipient"]:checked')]
+  const selected = new Set([...recipientList.querySelectorAll('input[name="location-recipient"]:checked')]
     .map((checkbox) => checkbox.value));
-  return trustedRecipients.filter((recipient) => ids.has(recipient.userId));
+  return trustedRecipients.filter((recipient) => selected.has(recipient.userId));
 }
 
 function readDevicePosition() {
   return new Promise((resolve, reject) => {
+    if (!window.isSecureContext || !navigator.geolocation) {
+      reject(new Error("Location needs a secure website and browser location support."));
+      return;
+    }
     navigator.geolocation.getCurrentPosition(resolve, reject, POSITION_OPTIONS);
   });
 }
 
 async function startLocationShare() {
-  if (!sharingIdentity) {
-    showMessage(locationMessage, "Unlock your private location key before sharing.");
-    return;
-  }
-  if (!window.isSecureContext || !navigator.geolocation) {
-    showMessage(locationMessage, "Location needs a secure HTTPS page and browser geolocation support. No location has been requested.");
+  if (!navigator.onLine || !signedInUser) {
+    showMessage(locationMessage, "Reconnect and sign in before starting a share. No one has been notified while offline.");
     return;
   }
   const recipients = selectedRecipients();
-  if (!recipients.length) {
-    showMessage(locationMessage, "Choose at least one member who opted in and has a private sharing key.");
-    return;
-  }
-  if (ownShares.some((share) => share.status === "active")) {
-    showMessage(locationMessage, "Stop your existing share before starting another.");
-    return;
-  }
-
+  if (!recipients.length) { showMessage(locationMessage, "Choose at least one trusted person who has allowed your location."); return; }
+  if (ownShares.some((share) => share.status === "active")) { showMessage(locationMessage, "Stop your existing share before starting another."); return; }
   startButton.disabled = true;
-  locationPausedForConsentChange = false;
-  // Request permission directly from the user's click, before network or crypto work.
-  const positionRequest = readDevicePosition();
-  showMessage(locationMessage, "Your browser is asking whether KinGuardian may use your location. No map service is contacted.", "busy");
   try {
-    const position = await positionRequest;
-    const createResult = await requestJson("/api/location-shares", {
+    showMessage(locationMessage, "Waiting for your browser’s location permission. Your point will be encrypted before it is saved.", "busy");
+    const position = await readDevicePosition();
+    const { share } = await requestJson("/api/location-shares", {
       method: "POST",
-      body: {
-        recipientUserIds: recipients.map((recipient) => recipient.userId),
-        expiresInMinutes: Number(document.querySelector("#location-expiry").value),
-      },
+      body: { recipientUserIds: recipients.map((recipient) => recipient.userId), expiresInMinutes: Number(document.querySelector("#location-expiry").value) },
     });
-    currentShareId = createResult.share.shareId;
+    currentShareId = share.shareId;
     currentRecipients = recipients;
-    const firstUpdateAt = await publishPosition(position);
-    if (!firstUpdateAt) throw new Error("The page was hidden before the first encrypted location update was confirmed.");
-    showMessage(locationMessage, "Encrypted location sharing is active for the selected members. They can open this page and refresh to see the latest point.", "success");
+    await publishPosition(position);
+    showMessage(locationMessage, "Location sharing is on for your selected trusted people. Updates pause if this page is hidden or closed.", "success");
     await loadLocationShares();
+    await loadSOSLocations();
     startPositionUpdates();
   } catch (error) {
-    if (currentShareId) {
-      await requestJson(`/api/location-shares/${encodeURIComponent(currentShareId)}/stop`, {
-        method: "POST", body: {},
-      }).catch(() => undefined);
-      currentShareId = undefined;
-      currentRecipients = [];
-    }
+    if (currentShareId) await requestJson(`/api/location-shares/${encodeURIComponent(currentShareId)}/stop`, { method: "POST", body: {} }).catch(() => undefined);
+    currentShareId = undefined;
+    currentRecipients = [];
     showMessage(locationMessage, locationErrorMessage(error));
-    await loadLocationShares();
-  } finally {
-    startButton.disabled = false;
-  }
+    await loadLocationShares().catch(() => undefined);
+  } finally { startButton.disabled = false; }
 }
 
 function locationErrorMessage(error) {
-  if (error.code === 1) return "Location permission was denied. Change the browser permission if you want to try again; nothing was shared.";
-  if (error.code === 2) return "Your device could not determine a location. Try again when location is available.";
-  if (error.code === 3) return "The device took too long to find a location. Try again when you have a clearer signal.";
-  return error.message || "Location sharing could not be started. No delivery has been claimed.";
+  if (error.code === 1) return "Location permission was denied. Allow it in browser settings if you want to try again. No location was shared.";
+  if (error.code === 2) return "Your device could not find a location. Try again when location is available.";
+  if (error.code === 3) return "Finding your location took too long. Try again.";
+  return error.message || "Location sharing could not be started.";
+}
+
+function normalizePosition(position) {
+  return {
+    latitude: position.coords.latitude,
+    longitude: position.coords.longitude,
+    accuracy: Number.isFinite(position.coords.accuracy) ? position.coords.accuracy : 0,
+    capturedAt: Number.isFinite(position.timestamp) ? Math.trunc(position.timestamp) : Date.now(),
+    source: "browser location",
+  };
 }
 
 async function publishPosition(position) {
-  if (!currentShareId || !sharingIdentity || locationPausedForConsentChange || document.hidden) return;
-  const capturedAt = Number.isFinite(position.timestamp) ? Math.trunc(position.timestamp) : Date.now();
-  const location = {
-    latitude: position.coords.latitude,
-    longitude: position.coords.longitude,
-    accuracy: position.coords.accuracy,
-    capturedAt,
-  };
-  const entries = await Promise.all(currentRecipients.map(async (recipient) => ({
-    recipientUserId: recipient.userId,
-    ...await encryptLocationForRecipient(location, sharingIdentity.privateKey,
-      sharingIdentity.publicKey, recipient.locationPublicKey, {
-        shareId: currentShareId,
-        senderUserId: signedInUser.userId,
-        recipientUserId: recipient.userId,
-      }),
-  })));
-  if (document.hidden || !sharingIdentity || !currentShareId) return undefined;
+  if (!currentShareId || document.hidden || !navigator.onLine) return;
+  const point = normalizePosition(position);
+  await saveLastKnownPoint(point);
   const result = await requestJson(`/api/location-shares/${encodeURIComponent(currentShareId)}/update`, {
-    method: "POST", body: { entries },
+    method: "POST", body: point,
   });
-  showOwnLocation(location);
+  showOwnLocation(point);
+  if (result.updated === false) showMessage(locationMessage, "The server already has a newer location. The older point was ignored.", "pending");
   return result.updatedAt;
 }
 
-function showOwnLocation(location) {
-  const text = `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)} · ±${Math.round(location.accuracy)} m · ${new Intl.DateTimeFormat(navigator.language, { dateStyle: "medium", timeStyle: "short", timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }).format(location.capturedAt)}`;
-  coordinateReadout.textContent = text;
+async function saveLastKnownPoint(point) {
+  if (!signedInUser?.userId || !point || !Number.isFinite(point.latitude) || !Number.isFinite(point.longitude)) return;
+  const previous = await getOfflineRecord(signedInUser.userId, "location:last-known").catch(() => null);
+  if (previous?.capturedAt > point.capturedAt) return;
+  await putOfflineRecord(signedInUser.userId, "location:last-known", point).catch(() => undefined);
+  showOwnLocation(point);
+}
+
+async function showCachedPoint() {
+  if (!signedInUser?.userId) return;
+  const point = await getOfflineRecord(signedInUser.userId, "location:last-known").catch(() => null);
+  if (point) showOwnLocation(point);
+}
+
+function showOwnLocation(point) {
+  const stale = Date.now() - point.capturedAt > 5 * 60_000;
+  const stamp = formatDate(point.capturedAt);
+  coordinateReadout.textContent = `${stale ? "LAST KNOWN LOCATION" : "Your location"} · accuracy about ${Math.round(point.accuracy)} m · ${stamp}`;
   coordinateReadout.hidden = false;
-  ownerMapLink.href = openStreetMapUrl(location.latitude, location.longitude);
-  ownerMapLink.hidden = false;
+  ownMapLink.href = openStreetMapUrl(point.latitude, point.longitude);
+  ownMapLink.hidden = false;
+  window.dispatchEvent(new CustomEvent("kinguardian:map-point", { detail: {
+    id: "my-location", label: "My location", latitude: point.latitude, longitude: point.longitude, kind: "self", stale,
+  } }));
 }
 
 function startPositionUpdates() {
   stopPositionUpdates();
-  if (document.hidden || !currentShareId || !sharingIdentity) return;
+  const active = ownShares.find((share) => share.status === "active");
+  if (!active || document.hidden || !navigator.onLine) return;
+  currentShareId = active.shareId;
+  currentRecipients = trustedRecipients.filter((recipient) => active.recipients.some((saved) => saved.userId === recipient.userId));
+  if (!currentRecipients.length) return;
   updateTimer = window.setInterval(async () => {
-    if (!currentShareId || !sharingIdentity || document.hidden || isPublishing) return;
+    if (!navigator.onLine || document.hidden || isPublishing) return;
     isPublishing = true;
     try {
       const position = await readDevicePosition();
-      const updatedAt = await publishPosition(position);
-      if (!updatedAt) return;
-      showMessage(locationMessage, "An encrypted location update was saved. Recipients must refresh to see it.", "success");
+      const updated = await publishPosition(position);
+      if (updated) showMessage(locationMessage, "Your latest location was saved for the people you selected.", "success");
+      await loadLocationShares();
     } catch (error) {
-      if (error.status === 409 || error.code === "RECIPIENT_CHANGED") {
-        locationPausedForConsentChange = true;
-        stopPositionUpdates();
-        showMessage(locationMessage, "A member's consent changed. Location updates are paused. Stop this share and review the trusted circle.");
-      } else if (error.code === 1) {
-        stopPositionUpdates();
-        showMessage(locationMessage, "The browser no longer allows location access. Updates have stopped on this device; the last encrypted point expires automatically.");
-      } else {
-        showMessage(locationMessage, "The latest location could not be confirmed with the server. Updates will retry at the next interval; recipients may see an older point.");
-      }
-    } finally {
-      isPublishing = false;
-    }
+      showMessage(locationMessage, error.status === 409
+        ? "Location sharing stopped or permission changed. Review the sharing status."
+        : "The latest location could not be saved. KinGuardian will try again in one minute.", "pending");
+    } finally { isPublishing = false; }
   }, UPDATE_INTERVAL_MS);
 }
 
-function stopPositionUpdates() {
-  clearInterval(updateTimer);
-  updateTimer = undefined;
-}
-
+function stopPositionUpdates() { clearInterval(updateTimer); updateTimer = undefined; }
 function handleVisibilityChange() {
   if (document.hidden) {
     stopPositionUpdates();
-    if (currentShareId) showMessage(locationMessage, "Location updates are paused while this page is hidden. The last encrypted point remains until you stop or it expires.", "busy");
-    return;
+    if (currentShareId) showMessage(locationMessage, "Location updates are paused while this page is hidden. The last point remains until you stop sharing or it expires.", "pending");
+  } else {
+    if (navigator.onLine) void Promise.all([loadLocationShares(), loadSOSLocations()]).then(startPositionUpdates);
+    else void Promise.all([renderCachedLocationShares(), showCachedSOSLocations(), showCachedPoint()]);
+    scheduleRefresh();
   }
-  if (currentShareId && sharingIdentity && !locationPausedForConsentChange) startPositionUpdates();
+}
+
+function scheduleRefresh() {
+  clearTimeout(refreshTimer);
+  if (!navigator.onLine || document.hidden) return;
+  refreshTimer = window.setTimeout(async () => {
+    await Promise.all([loadLocationShares(), loadSOSLocations()]);
+    scheduleRefresh();
+  }, REFRESH_INTERVAL_MS);
+}
+
+async function loadSOSLocations() {
+  if (!navigator.onLine || !signedInUser) return;
+  try {
+    const { alerts } = await requestJson("/api/sos");
+    await putOfflineRecord(signedInUser.userId, "sos:history", alerts || []).catch(() => undefined);
+    renderSOSLocations(alerts || [], false);
+  } catch (error) {
+    if (error.status === 401) location.replace("login.html");
+  }
+}
+
+async function showCachedSOSLocations() {
+  const alerts = signedInUser?.userId
+    ? await getOfflineRecord(signedInUser.userId, "sos:history").catch(() => [])
+    : [];
+  renderSOSLocations(alerts || [], true);
+}
+
+function renderSOSLocations(alerts, cached) {
+    const points = alerts.filter((alert) => alert.location && !["resolved", "closed"].includes(alert.status));
+    for (const alert of points) {
+      const point = alert.location;
+      window.dispatchEvent(new CustomEvent("kinguardian:map-point", { detail: {
+        id: `sos:${alert.alertId}`,
+        label: `SOS @${alert.senderUsername}`,
+        latitude: point.latitude,
+        longitude: point.longitude,
+        kind: "trusted",
+        stale: Date.now() - point.capturedAt > 5 * 60_000,
+      } }));
+    }
+    const requestedAlertId = new URLSearchParams(location.search).get("sos");
+    if (requestedAlertId) {
+      const selected = points.find((alert) => alert.alertId === requestedAlertId);
+      if (selected) {
+        window.dispatchEvent(new CustomEvent("kinguardian:map-focus", { detail: {
+          latitude: selected.location.latitude, longitude: selected.location.longitude,
+        } }));
+        showMessage(locationMessage, `${cached ? "Showing saved" : "Emergency map opened for"} @${selected.senderUsername}. Last point saved ${formatDate(selected.location.capturedAt)}${cached ? "; it may be out of date" : ""}.`, cached ? "pending" : "success");
+      } else {
+        showMessage(locationMessage, "This alert has no available location, may have ended, or is not shared with your account.");
+      }
+    }
 }
 
 async function loadLocationShares() {
-  ownShareList.replaceChildren();
-  incomingShareList.replaceChildren();
   try {
     const result = await requestJson("/api/location-shares");
-    ownShares = result.ownShares || [];
-    ownShareEmpty.hidden = ownShares.length > 0;
-    startButton.disabled = ownShares.some((share) => share.status === "active");
-    for (const share of ownShares) ownShareList.append(renderOwnShare(share));
-    const incoming = result.incomingShares || [];
-    incomingShareEmpty.hidden = incoming.length > 0;
-    for (const share of incoming) incomingShareList.append(await renderIncomingShare(share));
+    if (signedInUser?.userId) await putOfflineRecord(signedInUser.userId, "location:shares", result).catch(() => undefined);
+    renderLocationShares(result, false);
   } catch (error) {
-    showMessage(locationMessage, error.message || "Location sharing status could not be refreshed.");
+    if (error.status === 401) location.replace("login.html");
+    await renderCachedLocationShares();
+    if (navigator.onLine) showMessage(locationMessage, error.message || "Location sharing status could not be refreshed.");
   }
 }
 
-function renderOwnShare(share) {
+async function renderCachedLocationShares() {
+  const result = signedInUser?.userId
+    ? await getOfflineRecord(signedInUser.userId, "location:shares").catch(() => null)
+    : null;
+  if (result) {
+    renderLocationShares(result, true);
+    showMessage(locationMessage, "Showing saved location-sharing status from this device. It may be out of date; changes need internet.", "pending");
+  } else {
+    ownShareList.replaceChildren();
+    incomingShareList.replaceChildren();
+    ownShareEmpty.hidden = false;
+    incomingShareEmpty.hidden = false;
+    startButton.disabled = true;
+  }
+}
+
+function renderLocationShares(result, readOnly) {
+    ownShares = result.ownShares || [];
+    ownShareEmpty.hidden = ownShares.length > 0;
+    ownShareList.replaceChildren(...ownShares.map((share) => renderOwnShare(share, readOnly)));
+    const incoming = result.incomingShares || [];
+    incomingShareEmpty.hidden = incoming.length > 0;
+    incomingShareList.replaceChildren(...incoming.map((share) => renderIncomingShare(share, readOnly)));
+    startButton.disabled = readOnly || ownShares.some((share) => share.status === "active");
+}
+
+function renderOwnShare(share, readOnly = false) {
   const item = document.createElement("li");
   item.className = "location-share-card";
   const title = document.createElement("strong");
   title.textContent = `Your share · ${share.status.replaceAll("_", " ")}`;
-  const recipients = share.recipients.map((recipient) => recipient.username).join(", ") || "No remaining recipients";
   const details = document.createElement("p");
-  const expiryText = new Intl.DateTimeFormat(navigator.language, { dateStyle: "medium", timeStyle: "short" }).format(share.expiresAt);
-  details.textContent = `For ${recipients}. Expires ${expiryText}${share.lastUpdatedAt ? ` · last update ${formatDate(share.lastUpdatedAt)}` : " · no location update is stored"}.`;
+  const recipients = share.recipients.map((recipient) => `@${recipient.username}`).join(", ") || "No remaining trusted people";
+  details.textContent = `For ${recipients}. Expires ${formatDate(share.expiresAt)}${share.lastUpdatedAt ? ` · last saved ${formatDate(share.lastUpdatedAt)}` : " · waiting for first location"}${readOnly ? " · saved status; may be out of date" : ""}.`;
   item.append(title, details);
-  if (share.status === "active") item.append(makeActionButton("Stop sharing and remove current point", "stop", share.shareId));
+  if (share.status === "active") {
+    const action = makeActionButton("Stop sharing", "stop", share.shareId);
+    action.disabled = readOnly;
+    item.append(action);
+  }
   return item;
 }
 
-async function renderIncomingShare(share) {
+function renderIncomingShare(share, readOnly = false) {
   const item = document.createElement("li");
   item.className = "location-share-card";
   const title = document.createElement("strong");
-  title.textContent = `Location from ${share.senderUsername}`;
+  title.textContent = `Location from @${share.senderUsername}`;
   const details = document.createElement("p");
-  try {
-    const location = await decryptLocationEnvelope(share.envelope, sharingIdentity.privateKey, {
-      shareId: share.shareId,
-      senderUserId: share.senderUserId,
-      recipientUserId: signedInUser.userId,
-    });
-    const stale = Date.now() - location.capturedAt > STALE_AFTER_MS;
-    details.textContent = `${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)} · ±${Math.round(location.accuracy)} m · captured ${formatDate(location.capturedAt)}${stale ? " · STALE: this point is older than five minutes" : " · current"}.`;
+  const point = share.location;
+  if (point) {
+    const stale = Date.now() - point.capturedAt > 5 * 60_000;
+    details.textContent = `${stale ? "LAST KNOWN LOCATION" : "Latest location"} · accuracy about ${Math.round(point.accuracy)} m · ${formatDate(point.capturedAt)}${stale ? " · updates may have stopped" : ""}${readOnly ? " · saved point; may be out of date" : ""}.`;
     if (stale) details.className = "location-status-stale";
+    window.dispatchEvent(new CustomEvent("kinguardian:map-point", { detail: {
+      id: share.shareId, label: share.senderUsername, latitude: point.latitude, longitude: point.longitude, kind: "trusted", stale,
+    } }));
     const map = document.createElement("a");
     map.className = "button button-outline";
-    map.href = openStreetMapUrl(location.latitude, location.longitude);
-    map.target = "_blank";
-    map.rel = "noopener noreferrer";
-    map.referrerPolicy = "no-referrer";
+    map.href = openStreetMapUrl(point.latitude, point.longitude);
+    map.target = "_blank"; map.rel = "noopener noreferrer"; map.referrerPolicy = "no-referrer";
     map.textContent = "Open point in OpenStreetMap";
-    item.append(title, details, map, makeActionButton("Stop receiving location", "leave", share.shareId));
-  } catch {
-    details.textContent = "This encrypted location could not be opened with this account's private key.";
-    item.append(title, details, makeActionButton("Stop receiving location", "leave", share.shareId));
+    const action = makeActionButton("Stop receiving location", "leave", share.shareId);
+    action.disabled = readOnly;
+    item.append(title, details, map, action);
+  } else {
+    details.textContent = `This person has started sharing. Their first location has not arrived yet.${readOnly ? " Saved status may be out of date." : ""}`;
+    const action = makeActionButton("Stop receiving location", "leave", share.shareId);
+    action.disabled = readOnly;
+    item.append(title, details, action);
   }
   return item;
 }
 
 function makeActionButton(label, operation, shareId) {
   const button = document.createElement("button");
-  button.type = "button";
-  button.className = "button button-outline";
-  button.dataset.operation = operation;
-  button.dataset.shareId = shareId;
-  button.textContent = label;
+  button.type = "button"; button.className = "button button-outline";
+  button.dataset.operation = operation; button.dataset.shareId = shareId; button.textContent = label;
   return button;
 }
 
 async function handleOwnShareAction(event) {
   const button = event.target.closest('button[data-operation="stop"]');
-  if (!button || !window.confirm("Stop sharing now? KinGuardian will remove the current encrypted location point.")) return;
+  if (!button || !window.confirm("Stop sharing your location now?")) return;
   button.disabled = true;
-  if (button.dataset.shareId === currentShareId) {
-    stopPositionUpdates();
-    currentShareId = undefined;
-    currentRecipients = [];
-    locationPausedForConsentChange = false;
-  }
   try {
-    await requestJson(`/api/location-shares/${encodeURIComponent(button.dataset.shareId)}/stop`, {
-      method: "POST", body: {},
-    });
-    showMessage(locationMessage, "Sharing stopped. The current encrypted location point was removed from the server.", "success");
+    await requestJson(`/api/location-shares/${encodeURIComponent(button.dataset.shareId)}/stop`, { method: "POST", body: {} });
+    if (button.dataset.shareId === currentShareId) { stopPositionUpdates(); currentShareId = undefined; currentRecipients = []; }
+    showMessage(locationMessage, "Location sharing stopped and saved points were removed.", "success");
     await loadLocationShares();
-  } catch (error) {
-    showMessage(locationMessage, `${error.message || "The server could not confirm the stop request."} Location updates have stopped on this device; the last point can remain available until expiry. Reconnect and retry Stop.`);
-    button.disabled = false;
-  }
+  } catch (error) { showMessage(locationMessage, error.message || "The share could not be stopped. Reconnect and try again."); button.disabled = false; }
 }
 
 async function handleIncomingShareAction(event) {
   const button = event.target.closest('button[data-operation="leave"]');
-  if (!button || !window.confirm("Stop receiving this member's location? Your current encrypted point will be removed.")) return;
+  if (!button || !window.confirm("Stop receiving this person's location?")) return;
   button.disabled = true;
   try {
-    await requestJson(`/api/location-shares/${encodeURIComponent(button.dataset.shareId)}/leave`, {
-      method: "POST", body: {},
-    });
+    await requestJson(`/api/location-shares/${encodeURIComponent(button.dataset.shareId)}/leave`, { method: "POST", body: {} });
     showMessage(locationMessage, "You stopped receiving this location share.", "success");
     await loadLocationShares();
-  } catch (error) {
-    showMessage(locationMessage, error.message || "The location share could not be removed.");
-    button.disabled = false;
-  }
+  } catch (error) { showMessage(locationMessage, error.message || "The location share could not be removed."); button.disabled = false; }
 }
 
 function openStreetMapUrl(latitude, longitude) {
   return `https://www.openstreetmap.org/?mlat=${latitude}&mlon=${longitude}#map=16/${latitude}/${longitude}`;
 }
-
-function formatDate(value) {
-  return new Intl.DateTimeFormat(navigator.language, { dateStyle: "medium", timeStyle: "short" }).format(value);
-}
+function formatDate(value) { return new Intl.DateTimeFormat(navigator.language, { dateStyle: "medium", timeStyle: "short" }).format(value); }

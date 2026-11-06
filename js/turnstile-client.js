@@ -8,7 +8,6 @@ export async function prepareTurnstile(container) {
   });
   if (!response.ok) throw new Error("The account security check could not be loaded.");
   const configuration = await response.json();
-  if (configuration.mode === "off") return createState("off");
   if (configuration.mode !== "enabled" || typeof configuration.siteKey !== "string") {
     return createState("unavailable");
   }

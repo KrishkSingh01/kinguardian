@@ -40,7 +40,7 @@ form.addEventListener("submit", async (event) => {
   submit.disabled = true;
   try {
     await securityCheckReady;
-    if (securityCheck.mode === "unavailable") throw new Error("The account security check is unavailable. Refresh the page and try again.");
+    if (securityCheck.mode === "unavailable") throw new Error("KinGuardian's security check is not ready. Please try again later.");
     if (securityCheck.mode === "enabled" && !securityCheck.token()) throw new Error("Complete the security check before creating your account.");
     showMessage(message, "Creating your account…", "busy");
     const response = await requestJson("/api/auth/register", {
