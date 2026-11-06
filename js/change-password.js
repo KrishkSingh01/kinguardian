@@ -6,7 +6,7 @@ const message = document.querySelector("#password-message");
 
 try {
   const session = await requestJson("/api/auth/me");
-  if (!session.user.mustChangePassword) location.replace("app.html");
+  if (!session.user.mustChangePassword) location.replace("dashboard.html");
 } catch {
   location.replace("login.html");
 }
@@ -35,10 +35,11 @@ form.addEventListener("submit", async (event) => {
     const pendingInvite = sessionStorage.getItem("kg-pending-invite");
     const invitationDestination = /^[A-Za-z0-9_-]{43}$/u.test(pendingInvite || "")
       ? `invite.html#${pendingInvite}`
-      : "app.html";
+      : "dashboard.html";
     location.replace(invitationDestination);
   } catch (error) {
     showMessage(message, error.message || "The password could not be changed.");
     submit.disabled = false;
   }
 });
+

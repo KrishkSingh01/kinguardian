@@ -1,0 +1,31 @@
+.network-card {
+  grid-column: 1 / -1;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: clamp(18px, 3vw, 25px);
+  background: linear-gradient(145deg, var(--surface), var(--surface-raised));
+  box-shadow: var(--shadow-small);
+}
+.network-card-head, .network-monitor-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.network-card-head h3 { margin-bottom: 0; font-size: 1.08rem; }
+.network-state { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); border-radius: 999px; padding: 7px 11px; color: var(--ink-soft); font-size: .7rem; font-weight: 700; }
+.network-state::before { width: 7px; height: 7px; border-radius: 50%; background: var(--amber); content: ""; }
+.network-state[data-state="online"]::before { background: var(--forest); }
+.network-state[data-state="limited"]::before { background: var(--amber); }
+.network-state[data-state="offline"]::before { background: var(--coral); }
+.network-explanation, .network-storage-note { max-width: 760px; margin: 12px 0; color: var(--ink-muted); font-size: .74rem; line-height: 1.6; }
+.network-monitor-row { justify-content: flex-start; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 14px; }
+.network-monitor-toggle { display: inline-flex; min-height: 42px; align-items: center; gap: 9px; color: var(--ink); cursor: pointer; font-size: .75rem; font-weight: 700; }
+.network-monitor-toggle input { width: 17px; height: 17px; margin: 0; accent-color: var(--forest); }
+.network-monitor-row .button { min-height: 36px; margin-left: auto; font-size: .68rem; }
+.network-history { display: grid; gap: 7px; margin: 8px 0 0; padding: 0; list-style: none; }
+.network-history li { display: flex; align-items: baseline; justify-content: space-between; gap: 14px; border-radius: 10px; padding: 9px 11px; background: var(--surface-soft); color: var(--ink-soft); font-size: .7rem; }
+.network-history time { flex: 0 0 auto; color: var(--ink-muted); font-size: .64rem; }
+.network-history-empty { margin: 8px 0 0; color: var(--ink-muted); font-size: .7rem; }
+.network-history-empty[hidden] { display: none; }
+.network-monitor-toggle input:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+@media (max-width: 520px) {
+  .network-card-head { align-items: flex-start; flex-direction: column; }
+  .network-state { max-width: 100%; }
+  .network-history li { align-items: flex-start; flex-direction: column; gap: 3px; }
+}

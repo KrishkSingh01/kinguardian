@@ -84,7 +84,8 @@
   .content-wrap { padding-right: 13px; padding-left: 13px; }
   .empty-circle-card { align-items: flex-start; flex-direction: column; }
   .avatar-orbit { width: 96px; height: 92px; }
-  .sos-button { gap: 8px; padding: 9px; }
+  .sos-button { gap: 12px; padding: 0; }
+  .sos-symbol { width: 70px; height: 70px; border-width: 3px; font-size: 1rem; }
   .sos-copy strong { font-size: .79rem; }
   .sos-copy small { font-size: .62rem; }
 }

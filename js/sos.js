@@ -1,4 +1,5 @@
 import { requestJson, showMessage } from "./auth-client.js";
+import { getCountdownDuration, getRemainingCountdownSeconds } from "./sos-countdown-state.js";
 
 const testMode = document.querySelector("#test-mode");
 const realWarning = document.querySelector("#real-alert-warning");
@@ -14,12 +15,16 @@ const message = document.querySelector("#sos-message");
 const alertList = document.querySelector("#sos-alert-list");
 const alertEmpty = document.querySelector("#sos-alert-empty");
 const manualMessageLink = document.querySelector("#manual-message-link");
+const countdownDurationSelect = document.querySelector("#sos-countdown-duration");
+const customDurationInput = document.querySelector("#sos-custom-duration");
+const customDurationLabel = document.querySelector("#sos-custom-duration-label");
 
 let signedInUser;
 let countdownTimer;
 let pendingSubmission = restorePendingSubmission();
 
 testMode.addEventListener("change", updateMode);
+countdownDurationSelect.addEventListener("change", updateCountdownDurationControl);
 startButton.addEventListener("click", startCountdown);
 cancelButton.addEventListener("click", cancelCountdown);
 retryButton.addEventListener("click", submitPendingAlert);
@@ -38,12 +43,23 @@ async function initialize() {
     updateMode();
     if (pendingSubmission) {
       testMode.checked = pendingSubmission.testMode;
+      countdownDurationSelect.value = pendingSubmission.countdownSelection;
+      customDurationInput.value = pendingSubmission.customDuration;
+      updateCountdownDurationControl();
       updateMode();
-      showMessage(message, "A previous submission needs a confirmed server response. Retry the same alert to avoid creating a duplicate.");
-      startButton.hidden = true;
-      retryButton.hidden = false;
-      testMode.disabled = true;
-      recipientFieldset.disabled = true;
+      if (pendingSubmission.submissionStarted) {
+        showMessage(message, "A previous submission needs a confirmed server response. Retry the same alert to avoid creating a duplicate.");
+        startButton.hidden = true;
+        retryButton.hidden = false;
+        testMode.disabled = true;
+        countdownDurationSelect.disabled = true;
+        recipientFieldset.disabled = true;
+      } else {
+        showMessage(message, "Your countdown was paused when this page closed. It is continuing here, and you can still cancel it.", "busy");
+        beginCountdown();
+      }
+    } else {
+      updateCountdownDurationControl();
     }
     await Promise.all([loadRecipients(), loadAlerts()]);
   } catch (error) {
@@ -102,43 +118,67 @@ function startCountdown() {
     showMessage(message, "Choose at least one trusted member, or turn test mode back on.");
     return;
   }
+  let durationSeconds;
+  try {
+    durationSeconds = getCountdownDuration(countdownDurationSelect.value, customDurationInput.value);
+  } catch (error) {
+    showMessage(message, error.message);
+    customDurationInput.focus();
+    return;
+  }
   pendingSubmission = {
     clientAlertId: crypto.randomUUID(),
     testMode: testMode.checked,
     trustedUserIds: selectedRecipientIds(),
     externalContactIds: [],
     senderTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Etc/UTC",
+    countdownEndsAt: Date.now() + durationSeconds * 1000,
+    submissionStarted: false,
+    countdownSelection: countdownDurationSelect.value,
+    customDuration: customDurationInput.value,
   };
   manualMessageLink.hidden = true;
   savePendingSubmission();
-  let seconds = 5;
-  countdownNumber.textContent = String(seconds);
+  beginCountdown(durationSeconds);
+}
+
+function beginCountdown() {
+  const endTime = pendingSubmission.countdownEndsAt;
   countdownPanel.hidden = false;
   startButton.hidden = true;
   retryButton.hidden = true;
   testMode.disabled = true;
+  countdownDurationSelect.disabled = true;
   recipientFieldset.disabled = true;
   showMessage(message, testMode.checked
     ? "Test countdown started. No recipients or location will be included."
     : "Countdown started. The server will record this alert, but this prototype will not notify contacts.", "busy");
-  countdownTimer = window.setInterval(() => {
-    seconds -= 1;
-    countdownNumber.textContent = String(Math.max(seconds, 0));
-    if (seconds <= 0) {
-      clearInterval(countdownTimer);
-      countdownTimer = undefined;
-      countdownPanel.hidden = true;
-      void submitPendingAlert();
-    }
-  }, 1000);
+  updateCountdownDisplay(endTime);
+  if (getRemainingCountdownSeconds(endTime) <= 0) return;
+  countdownTimer = window.setInterval(() => updateCountdownDisplay(endTime), 1000);
+}
+
+function updateCountdownDisplay(endTime) {
+  const secondsRemaining = getRemainingCountdownSeconds(endTime);
+  countdownNumber.textContent = String(secondsRemaining);
+  if (secondsRemaining > 0 || !pendingSubmission) return;
+  if (countdownTimer) clearInterval(countdownTimer);
+  countdownTimer = undefined;
+  countdownPanel.hidden = true;
+  pendingSubmission.submissionStarted = true;
+  savePendingSubmission();
+  void submitPendingAlert();
 }
 
 function cancelCountdown() {
+  if (!pendingSubmission || pendingSubmission.submissionStarted) return;
   if (countdownTimer) clearInterval(countdownTimer);
   countdownTimer = undefined;
   countdownPanel.hidden = true;
   startButton.hidden = false;
   testMode.disabled = false;
+  countdownDurationSelect.disabled = false;
+  updateCountdownDurationControl();
   updateMode();
   pendingSubmission = undefined;
   clearPendingSubmission();
@@ -146,12 +186,13 @@ function cancelCountdown() {
 }
 
 async function submitPendingAlert() {
-  if (!pendingSubmission || countdownTimer) return;
+  if (!pendingSubmission || !pendingSubmission.submissionStarted || countdownTimer) return;
   startButton.disabled = true;
   retryButton.disabled = true;
   showMessage(message, "Submitting alert to the KinGuardian server…", "busy");
   try {
-    const result = await requestJson("/api/sos", { method: "POST", body: pendingSubmission });
+    const { countdownEndsAt, submissionStarted, countdownSelection, customDuration, ...alertRequest } = pendingSubmission;
+    const result = await requestJson("/api/sos", { method: "POST", body: alertRequest });
     pendingSubmission = undefined;
     clearPendingSubmission();
     showMessage(message, result.message || "Alert status received from the server.", "success");
@@ -162,6 +203,8 @@ async function submitPendingAlert() {
     startButton.hidden = false;
     retryButton.hidden = true;
     testMode.disabled = false;
+    countdownDurationSelect.disabled = false;
+    updateCountdownDurationControl();
     updateMode();
     await loadAlerts();
   } catch (error) {
@@ -187,9 +230,28 @@ function restorePendingSubmission() {
     if (typeof value.clientAlertId !== "string" || typeof value.testMode !== "boolean"
       || !Array.isArray(value.trustedUserIds) || !Array.isArray(value.externalContactIds)
       || typeof value.senderTimezone !== "string") return undefined;
+    // Preserve older uncertain submission IDs so retry cannot create a duplicate.
+    if (typeof value.countdownEndsAt !== "number" || typeof value.submissionStarted !== "boolean") {
+      value.countdownEndsAt = Date.now();
+      value.submissionStarted = true;
+    }
+    if (typeof value.countdownSelection !== "string") value.countdownSelection = "5";
+    if (typeof value.customDuration !== "string") value.customDuration = "15";
+    getCountdownDuration(value.countdownSelection, value.customDuration);
     return value;
   } catch {
     return undefined;
+  }
+}
+
+function updateCountdownDurationControl() {
+  const custom = countdownDurationSelect.value === "custom";
+  customDurationInput.hidden = !custom;
+  customDurationInput.disabled = !custom;
+  customDurationLabel.hidden = !custom;
+  if (!startButton.hidden) {
+    const duration = custom ? customDurationInput.value : countdownDurationSelect.value;
+    startButton.textContent = `Start ${duration || "custom"}-second countdown`;
   }
 }
 

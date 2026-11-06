@@ -12,6 +12,9 @@
 .sos-compose-card, .sos-history-card { display: block; margin-bottom: 15px; }
 .sos-compose-card > .eyebrow, .sos-section-heading .eyebrow { margin-bottom: 4px; }
 .sos-compose-card h2, .sos-section-heading h2 { margin: 0; font-size: 1.25rem; }
+.sos-countdown-choices { display: grid; max-width: 330px; gap: 7px; margin-top: 18px; }
+.sos-countdown-choices > label { color: var(--ink); font-size: .73rem; font-weight: 700; }
+.sos-countdown-choices .field-hint { margin: 0; }
 .test-mode-choice { display: flex; align-items: flex-start; gap: 11px; margin-top: 18px; border: 1px solid var(--line-strong); border-radius: 13px; padding: 13px; cursor: pointer; }
 .test-mode-choice input { width: 18px; height: 18px; flex: 0 0 auto; margin: 2px 0 0; accent-color: var(--forest); }
 .test-mode-choice strong, .test-mode-choice small { display: block; }

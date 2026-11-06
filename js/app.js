@@ -45,7 +45,7 @@ function setTheme(theme) {
   if (themeSelect) themeSelect.value = accepted;
   const followsDarkSystem = accepted === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches;
   const useDarkColors = accepted === "dark" || followsDarkSystem;
-  document.querySelector('meta[name="theme-color"]').content = useDarkColors ? "#111a17" : "#f3f2ec";
+  document.querySelector('meta[name="theme-color"]').content = useDarkColors ? "#071a12" : "#f1f7f3";
   const mode = accepted === "system" ? "device setting" : `${accepted} mode`;
   document.querySelectorAll(".theme-cycle").forEach((button) => {
     button.setAttribute("aria-label", `Change colour theme. Current theme: ${mode}.`);
@@ -270,9 +270,8 @@ async function enforceSignedInSession() {
     if (!response.ok || !payload.user) throw new Error("Sign-in could not be verified.");
     document.querySelector("#account-indicator").textContent = `Signed in · ${payload.user.username}`;
     document.querySelector(".profile-meta strong").textContent = payload.user.username;
-    document.querySelector(".profile-meta small").textContent = payload.user.role === "owner" ? "Owner account" : "Member account";
+    document.querySelector(".profile-meta small").textContent = "Signed-in account";
     document.querySelectorAll("[data-auth-only]").forEach((element) => { element.hidden = false; });
-    document.querySelectorAll("[data-owner-only]").forEach((element) => { element.hidden = payload.user.role !== "owner"; });
     if (payload.user.mustChangePassword) location.replace("change-password.html");
   } catch {
     document.querySelector("#app-shell").hidden = true;
