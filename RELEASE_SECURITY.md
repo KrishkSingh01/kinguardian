@@ -90,7 +90,7 @@ The remote D1 database already exists as `kinguardian-db`. Both Wrangler files s
 
 Configure secrets through Cloudflare’s secret settings, never in GitHub or TOML:
 
-- Pages: `OWNER_BOOTSTRAP_SECRET`, `AUTH_RATE_LIMIT_SECRET`, and the public `VAPID_PUBLIC_KEY` variable.
+- Pages: `AUTH_RATE_LIMIT_SECRET` and the public `VAPID_PUBLIC_KEY` variable.
 - Scheduled Worker: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT`.
 - Pages D1 binding: `DB` → `kinguardian-db`.
 - Scheduled Worker D1 binding: `DB` → the same `kinguardian-db`.
@@ -114,8 +114,8 @@ References: [Cloudflare Pages Git integration](https://developers.cloudflare.com
 
 ## Remaining steps
 
-1. Back up production D1, then apply pending migrations with `npx wrangler d1 migrations apply kinguardian-db --remote`. Migration `0015` aborts if `users` has any rows; migration `0016` only creates the recovery-code table.
-2. Build and manually deploy the updated Pages Functions code. Keep the existing production `DB` binding and secrets in Cloudflare.
-3. Open `/api/auth/bootstrap-status`. When `setupAvailable` is `true`, follow [the owner setup steps](DATABASE_GUIDE.md#create-the-first-owner). The internal owner ID is generated automatically; username is `owner`.
-4. Visually inspect the public site and test authenticated flows with non-sensitive test data before inviting anyone. Do not use a real SOS as a test.
+1. Check the current production D1 migration list and make a backup before any database change. This update adds no migration.
+2. Build and review the Pages output. The build excludes owner setup/admin pages, scripts, and routes while preserving the legacy schema and user rows.
+3. Deploy only when you choose to publish. This workspace does not deploy to production.
+4. Visually inspect the public site and test authenticated flows with non-sensitive test data. Do not use a real SOS as a test.
 5. The scheduled Worker, VAPID push, and Android APK are not ready for use. Review their setup separately before relying on them.

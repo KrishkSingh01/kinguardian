@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en" data-theme="system">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f3f2ec" />
+    <meta name="description" content="Verified emergency number information for KinGuardian users." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/icons/kinguardian.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/auth.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/emergency.css" />
+    <script type="module" src="js/emergency.js"></script>
+    <title>Emergency services · KinGuardian</title>
+  </head>
+  <body class="auth-page emergency-page">
+    <a class="skip-link" href="#emergency-content">Skip to emergency information</a>
+    <main class="emergency-wrap" id="emergency-content">
+      <a class="brand" href="login.html" aria-label="KinGuardian sign in"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 3.5 34 9v10.4c0 8.1-5.7 14-14 17.1-8.3-3.1-14-9-14-17.1V9l14-5.5Z"/><path d="M13.2 20.3c0-3.8 2.6-6.6 6.8-6.6s6.8 2.8 6.8 6.6c0 3.5-2.6 6.2-6.8 9.1-4.2-2.9-6.8-5.6-6.8-9.1Z"/><path d="M16 20h8"/></svg></span><span class="brand-name">kin<span>guardian</span></span></a>
+      <section class="emergency-card" aria-labelledby="emergency-title">
+        <p class="eyebrow">EMERGENCY SERVICES</p>
+        <h1 id="emergency-title">Call your local emergency service.</h1>
+        <p class="emergency-intro">Choose your country. KinGuardian does not request your location or place a call automatically.</p>
+        <label for="emergency-country">Country or region</label>
+        <select class="select-control" id="emergency-country">
+          <option value="india">India</option>
+          <option value="other">Another country</option>
+        </select>
+        <div id="india-emergency" class="emergency-number-card">
+          <p class="emergency-region">India · nationwide emergency response</p>
+          <p class="emergency-number" aria-label="Emergency phone number 112">112</p>
+          <p>For police, fire and rescue, health, and other emergencies.</p>
+          <a class="button button-coral emergency-call" href="tel:112">Call 112</a>
+          <p class="emergency-note">This opens your device’s phone app. Check the number and choose whether to call. KinGuardian cannot confirm the call connected.</p>
+          <p class="emergency-source">Verified from the <a href="https://112.gov.in/" rel="noreferrer">Government of India ERSS 112 website</a> and the <a href="https://www.mha.gov.in/emergency-response-support-system-erss" rel="noreferrer">Ministry of Home Affairs</a>.</p>
+        </div>
+        <div id="other-emergency" class="emergency-other" role="status" hidden>
+          <h2>Number not verified here</h2>
+          <p>KinGuardian does not yet have a checked emergency-number list for this country. Use your local government or emergency-service website to confirm the right number. We will not guess.</p>
+        </div>
+        <p class="emergency-footer"><a href="login.html">Return to sign in</a></p>
+      </section>
+      <footer class="auth-footer"><span>KinGuardian</span><span>Your safety. Your trusted circle.</span></footer>
+    </main>
+  </body>
+</html>

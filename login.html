@@ -32,14 +32,15 @@
             <input id="username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required minlength="3" maxlength="40" />
             <label for="password">Password</label>
             <input id="password" name="password" type="password" autocomplete="current-password" required minlength="12" maxlength="256" />
+            <div class="turnstile-widget" id="login-turnstile" data-action="login" aria-label="Account security check" hidden></div>
             <button class="button button-dark auth-submit" id="login-submit" type="submit">Sign in <span aria-hidden="true">→</span></button>
           </form>
           <p class="form-message" id="login-message" role="status" aria-live="polite"></p>
           <p class="auth-account-links"><a href="recover.html">Forgot your password?</a></p>
-          <p class="auth-privacy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3m-11 0h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"/></svg> Your password is private. KinGuardian never shows it to the owner.</p>
+          <p class="auth-account-links"><a href="emergency.html">Emergency services and numbers</a></p>
+          <p class="auth-privacy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3m-11 0h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"/></svg> Your password is private. KinGuardian never displays it.</p>
           <p class="auth-register-prompt">New to KinGuardian? <a href="register.html">Create your free account <span aria-hidden="true">→</span></a></p>
           <a class="setup-link" href="pair-device.html">Pair a new device with an existing device <span aria-hidden="true">→</span></a>
-          <a class="setup-link" id="setup-link" href="setup.html" hidden>First-time owner setup <span aria-hidden="true">→</span></a>
         </div>
         <footer class="auth-footer"><span>KinGuardian</span><span>Your safety. Your trusted circle.</span></footer>
       </section>

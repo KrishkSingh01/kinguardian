@@ -25,14 +25,13 @@ npm run dev
 
 Use `npm run dev` to start the Pages preview at `http://localhost:8788`. The local emulator can apply all sixteen migrations. Visual QA remains pending because the Codex browser safety check stopped before opening the preview. Wrangler may fall back to a placeholder `Request.cf` object in local mode.
 
-The sign-in and one-time owner setup routes also need local secrets. In a regular PowerShell window, generate two different values:
+Sign-in and rate limiting need one local secret. Owner setup is disabled and does not need a bootstrap secret. In PowerShell, generate a value:
 
 ```powershell
 node -p "require('node:crypto').randomBytes(32).toString('base64url')"
-node -p "require('node:crypto').randomBytes(32).toString('base64url')"
 ```
 
-Create an ignored `.dev.vars` file in the project root and enter the first value after `OWNER_BOOTSTRAP_SECRET=` and the second after `AUTH_RATE_LIMIT_SECRET=`. Do not use example strings as credentials, and do not commit `.dev.vars`. These secrets are local-only; production secrets must be configured separately with Wrangler or in Cloudflare settings.
+Create an ignored `.dev.vars` file in the project root and enter the value after `AUTH_RATE_LIMIT_SECRET=`. Do not use example strings as credentials, and do not commit `.dev.vars`. This secret is local-only; production secrets must be configured separately with Wrangler or in Cloudflare settings.
 
 ## Check the existing remote database
 
@@ -65,19 +64,11 @@ npx wrangler d1 migrations apply kinguardian-db --remote
 
 Wrangler records migration history after applying. Back up production first. Apply migration `0015` before any account is created; apply migration `0016` before deploying registration and recovery-code pages. [Cloudflare D1 Wrangler commands](https://developers.cloudflare.com/d1/wrangler-commands/)
 
-## Create the first owner
+## Owner and legacy setup data
 
-You do not create or type an owner ID. The setup page generates a unique internal ID automatically. The sign-in username is `owner`.
+The current public build does not provide an owner account or owner-only administration. Pages excludes `/api/owner/*`, `/api/auth/bootstrap`, `/api/auth/bootstrap-status`, and `/api/auth/setup-password`; the build also omits the old setup pages and scripts. Existing owner rows, audit data, migration files, and legacy route source are preserved. Do not delete or rewrite those records as part of this change. Ordinary registration still creates only `member` accounts.
 
-1. Back up production D1 and apply pending migrations `0015_cloudflare_password_iterations.sql` and `0016_account_recovery_codes.sql` in order. Apply `0015` before any user exists. Confirm the Pages project has the `DB` binding to `kinguardian-db`.
-2. In Cloudflare, open **Workers & Pages > kinguardian > Settings > Variables and Secrets**. For the **Production** environment, add two encrypted secrets: `OWNER_BOOTSTRAP_SECRET` and `AUTH_RATE_LIMIT_SECRET`. To make each value in PowerShell, run `node -p "require('node:crypto').randomBytes(32).toString('base64url')"` twice and use a different result for each secret. Do not put either value in GitHub or this chat.
-3. Build and manually deploy the updated Pages Functions after the migration is applied.
-4. Open `https://kinguardian.pages.dev/api/auth/bootstrap-status`. Continue when it returns `"setupAvailable": true`.
-5. Open `https://kinguardian.pages.dev/setup.html`. Enter the value of `OWNER_BOOTSTRAP_SECRET` and create the owner account. The page shows a temporary password and ten recovery codes once. Save both privately.
-6. Sign in at `https://kinguardian.pages.dev/login.html` with username `owner` and that temporary password. Change the password when prompted.
-7. After setup succeeds, remove the `OWNER_BOOTSTRAP_SECRET` from Cloudflare. Keep `AUTH_RATE_LIMIT_SECRET`; sign-in and other protected API routes still need it.
-
-Owner setup is one-time and the app allows exactly one owner. Do not insert an owner row by hand in D1. `AUTH_RATE_LIMIT_SECRET` is not the value you enter on the setup page. VAPID push keys are not required to create the owner.
+If `OWNER_BOOTSTRAP_SECRET` remains configured in Cloudflare, this build does not use it. Removing it from Cloudflare is a separate production configuration change. Do not remove or rotate it unless you have confirmed no other deployed release still uses it.
 
 ## Inspect tables and data
 
@@ -99,7 +90,7 @@ npx wrangler d1 migrations create kinguardian-db describe_the_change
 
 Write the SQL in the new file, test it locally, and keep it additive and backward-compatible where possible. To add a column, use `ALTER TABLE ... ADD COLUMN ...` in the new migration, then validate existing and new rows. Do not use `DROP`, destructive rewrites, or data-clearing statements without an explicit data-loss review.
 
-The first fourteen migrations create the prototype tables and add the encrypted international-contact envelope, default-off location consent, encrypted account-sharing keys, recipient-specific encrypted location envelopes, per-device Web Push delivery state, hash-only account setup tokens, and short-lived device-pairing requests. Migration `0015_cloudflare_password_iterations.sql` sets the account-password constraint to 100,000 PBKDF2 rounds, the Cloudflare Workers maximum. It stops if any user already exists. Migration `0016_account_recovery_codes.sql` adds a hash-only table for one-time password recovery codes. At the last recorded check, production migrations `0001`–`0014` were applied and `0015` was pending. Safety check-ins use `safety_checkins` and `safety_checkin_recipients`. The scheduled Worker marks overdue check-ins and creates idempotent events, then makes a bounded push attempt when VAPID and recipient consent are configured. A `provider_accepted` status is not a delivery receipt.
+The first fourteen migrations create the prototype tables and add the encrypted international-contact envelope, default-off location consent, encrypted account-sharing keys, recipient-specific encrypted location envelopes, per-device Web Push delivery state, hash-only account setup tokens, and short-lived device-pairing requests. Migration `0015_cloudflare_password_iterations.sql` sets the account-password constraint to 100,000 PBKDF2 rounds, the Cloudflare Workers maximum. Migration `0016_account_recovery_codes.sql` adds a hash-only table for one-time password recovery codes. Owner/bootstrap tables and tokens are legacy schema retained for compatibility; the public routes are disabled. Check the actual remote migration list before planning production changes; prior status notes may be stale. Safety check-ins use `safety_checkins` and `safety_checkin_recipients`. The scheduled Worker marks overdue check-ins and creates idempotent events, then makes a bounded push attempt when VAPID and recipient consent are configured. A `provider_accepted` status is not a delivery receipt.
 
 As checked on 2026-11-05, the Workers Free plan includes 5 million D1 rows read per day, 100,000 rows written per day, and 5 GB total D1 storage. Queries stop working after the daily read/write cap until 00:00 UTC; the free plan does not silently turn an overage into a paid upgrade. The Worker Cron CPU allowance is 10 ms per invocation, so this prototype sends at most one device push per minute. These limits can delay queued notifications. Check the current [D1 pricing and limits](https://developers.cloudflare.com/d1/platform/pricing/) and [Workers limits](https://developers.cloudflare.com/workers/platform/limits/) before relying on a production schedule.
 

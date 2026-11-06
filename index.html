@@ -4,103 +4,53 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f3f2ec" />
-    <meta name="description" content="KinGuardian helps you stay connected with a trusted circle through consent-based check-ins and safety tools." />
+    <meta name="description" content="KinGuardian helps people create a trusted circle, plan safety check-ins, and manage location sharing with care." />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/icons/kinguardian.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="css/tokens.css" />
     <link rel="stylesheet" href="css/base.css" />
-    <link rel="stylesheet" href="css/marketing.css" />
-    <title>KinGuardian — Your safety. Your trusted circle.</title>
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/landing.css" />
+    <title>KinGuardian · Your safety, your trusted circle</title>
   </head>
-  <body class="marketing-page">
+  <body class="landing-page">
     <a class="skip-link" href="#main-content">Skip to content</a>
-    <header class="site-header">
-      <div class="site-header-inner">
-        <a class="site-brand" href="index.html" aria-label="KinGuardian home">
-          <span class="site-brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><path d="M20 3.5 34 9v10.4c0 8.1-5.7 14-14 17.1-8.3-3.1-14-9-14-17.1V9l14-5.5Z" stroke="currentColor" stroke-width="1.7"/><path d="M13.2 20.3c0-3.8 2.6-6.6 6.8-6.6s6.8 2.8 6.8 6.6c0 3.5-2.6 6.2-6.8 9.1-4.2-2.9-6.8-5.6-6.8-9.1Z" stroke="currentColor" stroke-width="1.7"/><path d="M16 20h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span>
-          <span>kin<span class="site-brand-light">guardian</span></span>
-        </a>
-        <nav class="site-nav" aria-label="Main navigation">
-          <a href="#how-it-works">How it works</a>
-          <a href="#features">Safety tools</a>
-          <a href="#privacy">Privacy</a>
-          <a href="#faq">Questions</a>
-          <a href="#support">Contact</a>
-        </nav>
-        <div class="site-account-links">
-          <a class="site-sign-in" href="login.html">Sign in</a>
-          <a class="site-button site-button-small" href="register.html">Create account <span aria-hidden="true">→</span></a>
-        </div>
-      </div>
+    <header class="landing-header">
+      <a class="brand" href="index.html" aria-label="KinGuardian home"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 3.5 34 9v10.4c0 8.1-5.7 14-14 17.1-8.3-3.1-14-9-14-17.1V9l14-5.5Z"/><path d="M13.2 20.3c0-3.8 2.6-6.6 6.8-6.6s6.8 2.8 6.8 6.6c0 3.5-2.6 6.2-6.8 9.1-4.2-2.9-6.8-5.6-6.8-9.1Z"/><path d="M16 20h8"/></svg></span><span class="brand-name">kin<span>guardian</span></span></a>
+      <nav aria-label="Main navigation"><a href="#how-it-works">How it works</a><a href="#privacy">Privacy</a><a href="emergency.html">Emergency help</a></nav>
+      <div class="landing-auth"><a class="landing-signin" href="login.html">Sign in</a><a class="button button-dark" href="register.html">Create free account</a></div>
     </header>
-
     <main id="main-content">
-      <section class="preview-status" aria-label="Service status">
-        <span class="status-dot" aria-hidden="true"></span>
-        <p><strong>KinGuardian is in preview.</strong> Automatic emergency alerts are not currently enabled. If you are in immediate danger, contact your local emergency services.</p>
-      </section>
-
-      <section class="marketing-hero" aria-labelledby="hero-title">
-        <div class="hero-copy">
-          <p class="eyebrow"><span class="eyebrow-line" aria-hidden="true"></span> YOUR SAFETY, YOUR PACE</p>
-          <h1 id="hero-title">A little more connected. <em>A lot more in control.</em></h1>
-          <p class="hero-description">KinGuardian gives you a calm place to stay in touch with the people you trust, set safety check-ins, and choose what you share.</p>
-          <div class="hero-actions">
-            <a class="site-button" href="register.html">Create your account <span aria-hidden="true">→</span></a>
-            <a class="site-button site-button-outline" href="login.html">Sign in</a>
-          </div>
-          <p class="hero-note"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v5.7c0 4.4-3.3 7.8-8 9.3-4.7-1.5-8-4.9-8-9.3V6l8-3Z"/><path d="m9 12.1 2 1.9 4-4"/></svg> Your circle is built around trust and consent.</p>
+      <section class="landing-hero">
+        <div class="landing-hero-copy">
+          <p class="eyebrow"><span class="landing-live-dot"></span> YOUR SAFETY. YOUR TRUSTED CIRCLE.</p>
+          <h1>Feel closer to the people who care.</h1>
+          <p class="landing-lede">KinGuardian gives you a private place to build a trusted circle, plan check-ins, and choose when to share your location.</p>
+          <div class="landing-actions"><a class="button button-dark" href="register.html">Create your free account <span aria-hidden="true">→</span></a><a class="landing-secondary" href="login.html">I already have an account</a></div>
+          <p class="landing-cost-note">Free to use · No email required · No paid messaging service</p>
         </div>
-        <aside class="hero-card" aria-label="A simple safety routine">
-          <div class="hero-card-top"><span class="hero-card-icon" aria-hidden="true">✳</span><span class="hero-card-label">A SIMPLE WAY TO STAY CLOSE</span></div>
-          <div class="circle-visual" aria-hidden="true"><span class="circle-ring ring-outer"></span><span class="circle-ring ring-middle"></span><span class="circle-ring ring-inner"></span><span class="circle-heart"><svg viewBox="0 0 44 44"><path d="M22 5 37 11v11c0 8.7-6.1 15-15 18-8.9-3-15-9.3-15-18V11L22 5Z"/><path d="M15 23c0-3.2 2.2-5.5 5.6-5.5s5.6 2.3 5.6 5.5c0 3-2.2 5.2-5.6 7.7C17.2 28.2 15 26 15 23Z"/></svg></span><span class="orbit-person person-a">Y</span><span class="orbit-person person-b">+</span><span class="orbit-person person-c">+</span></div>
-          <div class="hero-card-footer"><span><span class="status-dot" aria-hidden="true"></span> YOUR CIRCLE, YOUR CHOICE</span><span>01 / 03</span></div>
-        </aside>
-      </section>
-
-      <section class="how-section section-wrap" id="how-it-works" aria-labelledby="how-title">
-        <div class="section-heading"><p class="eyebrow">A GENTLE ROUTINE</p><h2 id="how-title">Safety that fits your life.</h2><p>Start with the people you trust. Set things up in a way that feels right for you.</p></div>
-        <div class="steps-grid">
-          <article class="step-card"><span class="step-number">01</span><span class="step-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M17 8h5m-2.5-2.5v5"/></svg></span><h3>Choose your people</h3><p>Invite trusted KinGuardian members or add an external emergency contact. A connection is only made when both members agree.</p></article>
-          <article class="step-card"><span class="step-number">02</span><span class="step-icon step-icon-lime" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="16" rx="2"/><path d="M7.5 3v4M16.5 3v4M3.5 9.5h17M8 14l2.3 2.2 5-5"/></svg></span><h3>Set a check-in</h3><p>Choose a time and a grace period that suit you. KinGuardian records your schedule and check-in status for your account.</p></article>
-          <article class="step-card"><span class="step-number">03</span><span class="step-icon step-icon-coral" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3.5 21 20H3l9-16.5Z"/><path d="M12 9v4.7m0 3.2h.01"/></svg></span><h3>Use tools when needed</h3><p>Find your circle and safety tools in one place. Review each action and sharing choice before you continue.</p></article>
+        <div class="landing-visual" aria-hidden="true">
+          <div class="landing-orbit landing-orbit-one"></div><div class="landing-orbit landing-orbit-two"></div><div class="landing-orbit landing-orbit-three"></div>
+          <div class="landing-shield"><svg viewBox="0 0 80 80"><path d="M40 7 68 17v21c0 17-11 29-28 36C23 67 12 55 12 38V17L40 7Z"/><path d="M27 39c0-7 5-12 13-12s13 5 13 12c0 6-5 11-13 17-8-6-13-11-13-17Z"/><path d="M33 40h14"/></svg></div>
+          <span class="landing-float landing-float-top">Here for each other</span><span class="landing-float landing-float-bottom">A little more connected</span>
         </div>
       </section>
-
-      <section class="features-section" id="features" aria-labelledby="features-title">
-        <div class="section-wrap">
-          <div class="section-heading section-heading-left"><p class="eyebrow">TOOLS FOR EVERYDAY SAFETY</p><h2 id="features-title">Thoughtful tools, clear choices.</h2><p>KinGuardian helps you organize the people and routines that matter to you.</p></div>
-          <div class="feature-grid">
-            <article class="feature-card"><span class="feature-index">A / CIRCLE</span><h3>Trusted contacts</h3><p>Keep contact details and member connections organized. Choose who can receive updates and review preferences at any time.</p><a href="register.html">Set up your circle <span aria-hidden="true">→</span></a></article>
-            <article class="feature-card"><span class="feature-index">B / CHECK-INS</span><h3>Gentle check-ins</h3><p>Plan a check-in with a schedule and grace period. A missed check-in is a request for attention, not proof that something bad happened.</p><a href="register.html">Explore check-ins <span aria-hidden="true">→</span></a></article>
-            <article class="feature-card"><span class="feature-index">C / SOS</span><h3>Emergency tools</h3><p>Access the SOS workflow and review its status. The current preview records SOS events but does not automatically contact your circle or emergency services.</p><a href="#preview-limits">See current limits <span aria-hidden="true">→</span></a></article>
-          </div>
+      <section class="landing-truth" aria-label="Important prototype notice"><strong>KinGuardian is still a prototype.</strong><span>SOS records may not notify contacts. KinGuardian does not contact emergency services. Do not rely on it for urgent help.</span><a href="emergency.html">See emergency numbers <span aria-hidden="true">→</span></a></section>
+      <section class="landing-section" id="how-it-works" aria-labelledby="features-heading">
+        <div class="landing-section-heading"><p class="eyebrow">SAFETY, WITH YOUR CHOICES AT THE CENTRE</p><h2 id="features-heading">Simple ways to stay connected.</h2><p>Use the features that suit you. Sharing is controlled by you and your trusted members.</p></div>
+        <div class="landing-feature-grid">
+          <article class="landing-feature"><span class="landing-feature-number">01</span><h3>Make a trusted circle</h3><p>Invite another KinGuardian member. The connection begins only after they accept.</p></article>
+          <article class="landing-feature"><span class="landing-feature-number">02</span><h3>Plan a check-in</h3><p>Set a time and a grace period. Reminders depend on your device and the scheduled service being configured.</p></article>
+          <article class="landing-feature"><span class="landing-feature-number">03</span><h3>Choose location sharing</h3><p>Start sharing only when you choose. Browser location is requested after your action and stops when you stop or the share expires.</p></article>
+          <article class="landing-feature landing-feature-sos"><span class="landing-feature-number">04</span><h3>Prepare an SOS alert</h3><p>Review a cancelable countdown. The current prototype records the alert but does not send it to contacts automatically.</p><a href="login.html">Sign in to view SOS controls <span aria-hidden="true">→</span></a></article>
         </div>
       </section>
-
-      <section class="privacy-section" id="privacy" aria-labelledby="privacy-title">
-        <div class="privacy-inner">
-          <div><p class="eyebrow">PRIVACY IS A CHOICE YOU KEEP</p><h2 id="privacy-title">Your information should follow your choices.</h2><p>KinGuardian is designed to give you control over your trusted circle, location sharing, and notification preferences.</p><a class="privacy-link" href="#preview-limits">Read current privacy limits <span aria-hidden="true">↗</span></a></div>
-          <ul class="privacy-list"><li><span aria-hidden="true">01</span><div><strong>Choose connections together</strong><p>Invitations are short-lived, single-use, and require the other person to accept.</p></div></li><li><span aria-hidden="true">02</span><div><strong>Sharing is not automatic</strong><p>Location sharing requires your action, chosen members, and an expiry time.</p></div></li><li><span aria-hidden="true">03</span><div><strong>Keep account recovery private</strong><p>Recovery codes are shown once. Save them somewhere safe and never share them.</p></div></li></ul>
-        </div>
+      <section class="landing-emergency" aria-labelledby="emergency-title">
+        <div><p class="eyebrow">NEED HELP RIGHT NOW?</p><h2 id="emergency-title">Call local emergency services.</h2><p>If you are in India, 112 is the nationwide emergency number. Elsewhere, use a number confirmed by your local government.</p></div>
+        <a class="button button-coral" href="emergency.html">View verified emergency information <span aria-hidden="true">→</span></a>
       </section>
-
-      <section class="preview-limits section-wrap" id="preview-limits" aria-labelledby="limits-title"><div class="limits-mark" aria-hidden="true">!</div><div><p class="eyebrow">PLEASE READ BEFORE RELYING ON THE APP</p><h2 id="limits-title">Some safety features are still in preview.</h2><p>SOS events can be recorded, but automatic contact notifications are not currently enabled. Web Push delivery has not been confirmed end to end. KinGuardian is not an emergency service and cannot contact emergency responders. For urgent help, call your local emergency number.</p></div><a class="text-link" href="login.html">Open your account <span aria-hidden="true">→</span></a></section>
-
-      <section class="faq-section section-wrap" id="faq" aria-labelledby="faq-title">
-        <div class="section-heading section-heading-left"><p class="eyebrow">GOOD QUESTIONS</p><h2 id="faq-title">A few things to know.</h2></div>
-        <div class="faq-list">
-          <details><summary>Can anyone create an account?</summary><p>Yes. Anyone can register as a member with a username and password. Public registration cannot create an owner account.</p></details>
-          <details><summary>Does KinGuardian call emergency services?</summary><p>No. KinGuardian is not an emergency service and does not call emergency responders. Contact local emergency services directly when urgent help is needed.</p></details>
-          <details><summary>Will my contacts receive an alert automatically?</summary><p>Not in the current preview. SOS events are recorded, but automatic contact alerts are not currently enabled. The site shows this limitation before you use the app.</p></details>
-          <details><summary>How do I reset a forgotten password?</summary><p>Use one of your saved one-time recovery codes on the password recovery page. KinGuardian does not currently send password-reset emails.</p></details>
-          <details><summary>How can I contact KinGuardian?</summary><p>Email <a href="mailto:iamkrishk41@gmail.com">iamkrishk41@gmail.com</a>. This is the public support contact. Automated service emails are not configured yet.</p></details>
-        </div>
-      </section>
-
-      <section class="support-section" id="support" aria-labelledby="support-title"><div class="support-inner"><div><p class="eyebrow">HERE TO HELP</p><h2 id="support-title">Questions? Get in touch.</h2><p>For support or general questions, email the KinGuardian contact address.</p></div><a class="support-email" href="mailto:iamkrishk41@gmail.com">iamkrishk41@gmail.com <span aria-hidden="true">↗</span></a></div></section>
+      <section class="landing-privacy" id="privacy" aria-labelledby="privacy-heading"><div><p class="eyebrow">YOUR INFORMATION, YOUR RESPONSIBILITY</p><h2 id="privacy-heading">Built with privacy choices in mind.</h2><p>Passwords are private, location sharing is opt-in, and KinGuardian does not sell or send your messages. Keep your recovery codes and private-data passphrase somewhere safe.</p></div><a class="landing-secondary" href="privacy.html">Read privacy and security notes</a></section>
     </main>
-
-    <footer class="site-footer"><a class="site-brand footer-brand" href="index.html"><span class="site-brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><path d="M20 3.5 34 9v10.4c0 8.1-5.7 14-14 17.1-8.3-3.1-14-9-14-17.1V9l14-5.5Z" stroke="currentColor" stroke-width="1.7"/><path d="M13.2 20.3c0-3.8 2.6-6.6 6.8-6.6s6.8 2.8 6.8 6.6c0 3.5-2.6 6.2-6.8 9.1-4.2-2.9-6.8-5.6-6.8-9.1Z" stroke="currentColor" stroke-width="1.7"/><path d="M16 20h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></span><span>kin<span class="site-brand-light">guardian</span></span></a><p>Your safety. Your trusted circle.</p><div class="footer-links"><a href="login.html">Sign in</a><a href="register.html">Create account</a><a href="mailto:iamkrishk41@gmail.com">Contact</a></div></footer>
+    <footer class="landing-footer"><a class="brand" href="index.html"><span class="brand-name">kin<span>guardian</span></span></a><span>Your safety. Your trusted circle.</span><a href="emergency.html">Emergency information</a></footer>
   </body>
 </html>

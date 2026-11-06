@@ -1,5 +1,10 @@
 {
   "version": 1,
   "include": ["/api/*"],
-  "exclude": []
+  "exclude": [
+    "/api/owner/*",
+    "/api/auth/bootstrap",
+    "/api/auth/bootstrap-status",
+    "/api/auth/setup-password"
+  ]
 }

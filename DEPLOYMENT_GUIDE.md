@@ -22,7 +22,7 @@ npm run dev
 
 The Node.js test suite and release check are run after code changes. All sixteen migrations are included in local schema checks. Start the local preview with `npm run dev`, then open its address in a regular browser; visual QA has not been completed. Wrangler may show placeholder `Request.cf` values in local mode.
 
-For local owner setup, add strong, unique `OWNER_BOOTSTRAP_SECRET` and `AUTH_RATE_LIMIT_SECRET` values to the ignored root `.dev.vars`. To test push locally, generate VAPID keys with `npm run generate:vapid`, put the public key in root `.dev.vars`, and put the public key, private key, and contact subject in `worker/.dev.vars`. Keep private values on your machine.
+For local sign-in, add a strong `AUTH_RATE_LIMIT_SECRET` to the ignored root `.dev.vars`. Owner setup is disabled in the published app. To test push locally, generate VAPID keys with `npm run generate:vapid`, put the public key in root `.dev.vars`, and put the public key, private key, and contact subject in `worker/.dev.vars`. Keep private values on your machine.
 
 ## 2. Keep the local folder and GitHub in sync
 
@@ -61,9 +61,9 @@ Use only the intended Cloudflare account. Do not put secret values in source fil
 
 Pages needs the `DB` binding and these values:
 
-- `OWNER_BOOTSTRAP_SECRET` — secret with at least 32 characters, used once to create the owner.
 - `AUTH_RATE_LIMIT_SECRET` — independent secret with at least 32 characters.
 - `VAPID_PUBLIC_KEY` — the public key matching the scheduled Worker's VAPID pair.
+- Optional Turnstile: `TURNSTILE_SITE_KEY` as a public variable and `TURNSTILE_SECRET_KEY` as an encrypted secret. Both are required to enable the free login and registration bot check. See [TURNSTILE_SETUP.md](TURNSTILE_SETUP.md). The bot check remains off when both are absent and fails closed if only one is set.
 
 The Worker needs the same `DB` binding and:
 
@@ -76,7 +76,6 @@ The Pages bindings are described in `wrangler.toml`; the scheduled Worker bindin
 For the existing Pages project, the simplest way to add secrets is Cloudflare **Workers & Pages > kinguardian > Settings > Variables and Secrets**. Select **Production**, add the secret, choose **Encrypt**, and save. If you use Wrangler instead, these commands prompt for secret values without placing them in command history:
 
 ```powershell
-npx wrangler pages secret put OWNER_BOOTSTRAP_SECRET --project-name kinguardian
 npx wrangler pages secret put AUTH_RATE_LIMIT_SECRET --project-name kinguardian
 npx wrangler pages secret put VAPID_PUBLIC_KEY --project-name kinguardian
 ```
@@ -111,7 +110,7 @@ The Worker runs every minute and attempts at most one device push per tick. The 
 
 ## 6. Verify a deployment safely
 
-After the database migrations and an authorized deployment, verify the public app shell, registration page, recovery page, and Pages Function health. Create the owner once, save the temporary password and recovery codes privately, and change the password at first sign-in. Members can then register themselves and save their own recovery codes. The owner test panel can run read-only service checks and create a safe test SOS; it does not notify contacts.
+After an authorized deployment, verify the app shell, registration page, recovery page, and Pages Function health. New members create their own accounts and save their recovery codes. Owner setup and owner administration are disabled in this build.
 
 Use the notification test action to validate a deliberately subscribed test device. Do not use a real SOS as a deployment test. Confirm the UI says “provider accepted” only after a push service returns success; it cannot confirm a device displayed a notification. Do not enter real emergency or sensitive personal information until the security and browser review is complete.
 
@@ -121,30 +120,26 @@ Use the notification test action to validate a deliberately subscribed test devi
 - GitHub has the real D1 UUID in both Wrangler files. This local export has now been updated to match.
 - `npm test`: 32 passed, 0 failed. `npm run check:release`: passed with 45 SHA-256-checked public assets. The build used `development` locally; Cloudflare's project form had `KG_RELEASE_TYPE=production`.
 - Current npm advisory status could not be checked because this environment could not resolve `registry.npmjs.org`. Python-only test scripts could not run because Python is not installed in the available shell.
-- At the last recorded check, production D1 migrations `0001`–`0014` were applied and `0015_cloudflare_password_iterations.sql` was pending. Apply `0015` before creating any account, then apply `0016_account_recovery_codes.sql` before deploying this update. Owner setup was not complete at that check.
-- The bootstrap and rate-limit secrets are configured well enough for the status endpoint to report setup available; their values were not read. Owner setup remains unused. The scheduled Worker, VAPID push, and authenticated API flows remain unverified. No APK exists or has been signed.
+- Production migration notes in this document are historical and may be stale. Read the remote migration list before any database action; this code update itself does not add a migration. The scheduled Worker, VAPID push, and authenticated API flows remain unverified. No APK exists or has been signed.
 - Visual verification of the public site remains incomplete because the computer-use safety restriction prevented browser automation.
 
 ## Manual production update
 
-At the last recorded check, production D1 had migrations `0001`–`0014` applied and migration `0015_cloudflare_password_iterations.sql` pending. Migration `0015` refuses to run if any user exists. Back up D1 outside the project folder before applying it. Apply migration `0016_account_recovery_codes.sql` after `0015`.
+This UI and route update does not include a database migration. Before changing production D1, check its current migration list and create a backup. Do not apply historical migrations based only on this guide.
 
-In PowerShell, run these commands from the main project folder. They apply pending database migrations, build and check the production files, then publish the Pages project. Do not create the owner until all steps succeed.
+If you choose to publish the reviewed build, run the build and release checks first. These commands build the static files; they do not migrate D1 or deploy the site.
 
 ```powershell
 Set-Location 'C:\Users\krish\Downloads\KinGuardian\kinguardian-source-0.1.0\kinguardian'
 $env:Path = 'C:\Program Files\nodejs;' + $env:Path
-npx.cmd wrangler d1 migrations list kinguardian-db --remote
-npx.cmd wrangler d1 migrations apply kinguardian-db --remote
 $env:KG_RELEASE_TYPE = 'production'
 npm.cmd ci
 npm.cmd test
 npm.cmd run check:release
-npx.cmd wrangler pages deploy dist --project-name kinguardian --branch main
 ```
 
 Wrangler must already be logged into the intended Cloudflare account. Keep any exported database backup and secret values outside the project and GitHub repository.
 
-This Wrangler command publishes from this folder but does not update GitHub. Before a later GitHub-triggered deployment, also commit the changed source files and migration to the connected repository, or GitHub can publish the older code again.
+These commands do not publish the site or change the remote database. After you upload the reviewed files to the connected GitHub repository, Cloudflare Pages can build and publish them using its existing settings.
 
-To create the first owner after confirming migrations, binding, and secrets, follow **Create the first owner** in [DATABASE_GUIDE.md](DATABASE_GUIDE.md). The owner ID is generated automatically; the sign-in username is `owner`.
+The Pages build excludes legacy owner setup/admin routes and screens. It preserves old owner-related database records and migrations; no database cleanup is needed for this UI change.

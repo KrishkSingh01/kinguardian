@@ -10,7 +10,7 @@
     "build": "node tools/build.mjs",
     "check:release": "npm run build && node tools/verify-release.mjs",
     "predev": "npm run build",
-    "dev": "wrangler pages dev dist --port 8788",
+    "dev": "node tools/dev.mjs",
     "dev:checkins": "wrangler dev --config worker/wrangler.toml",
     "generate:vapid": "node tools/generate-vapid-keys.mjs",
     "predeploy:pages": "npm run build",

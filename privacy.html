@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en" data-theme="system">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f3f2ec" />
+    <meta name="description" content="Plain-language privacy and security notes for KinGuardian." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/icons/kinguardian.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/auth.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <link rel="stylesheet" href="css/privacy.css" />
+    <title>Privacy and security · KinGuardian</title>
+  </head>
+  <body class="privacy-page">
+    <a class="skip-link" href="#privacy-content">Skip to privacy notes</a>
+    <main class="privacy-wrap" id="privacy-content">
+      <a class="brand" href="index.html" aria-label="KinGuardian home"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 3.5 34 9v10.4c0 8.1-5.7 14-14 17.1-8.3-3.1-14-9-14-17.1V9l14-5.5Z"/><path d="M13.2 20.3c0-3.8 2.6-6.6 6.8-6.6s6.8 2.8 6.8 6.6c0 3.5-2.6 6.2-6.8 9.1-4.2-2.9-6.8-5.6-6.8-9.1Z"/><path d="M16 20h8"/></svg></span><span class="brand-name">kin<span>guardian</span></span></a>
+      <article class="privacy-card">
+        <p class="eyebrow">PLAIN-LANGUAGE PROJECT NOTES</p>
+        <h1>Privacy and security</h1>
+        <p class="privacy-lede">KinGuardian is a prototype. These notes describe what the current code does and its limits. They are not a promise of emergency response or a formal security certification.</p>
+        <section><h2>Account information</h2><p>The service stores your username, a password hash, recovery-code hashes, session hashes, and basic timestamps in Cloudflare D1. Passwords and recovery codes are not stored as readable text. Registration does not need an email address or phone number. If the site operator enables the optional Cloudflare Turnstile check, Cloudflare processes browser and connection signals to help distinguish people from automated requests.</p></section>
+        <section><h2>Contacts and location</h2><p>External contact details are encrypted in your browser before storage and use a separate passphrase. If you lose that passphrase, the app cannot restore those details. Location is requested only after you choose to start a share. The server still sees the participating account IDs and timing, while the coordinates are encrypted for selected members.</p></section>
+        <section><h2>Messages and notifications</h2><p>KinGuardian does not automatically send SMS, email, or WhatsApp messages. Manual links open a composer only after you choose to use them. Browser push requires setup, permission on the device, and a working push service; provider acceptance does not prove that a phone displayed a notification.</p></section>
+        <section class="privacy-warning"><h2>Emergency limits</h2><p>The SOS action can record an alert, but the current prototype does not automatically notify contacts or emergency services. Do not rely on KinGuardian for urgent help. Use the emergency service number verified for your current location.</p><a href="emergency.html">View emergency information <span aria-hidden="true">→</span></a></section>
+        <section><h2>Hosting and browser limits</h2><p>Cloudflare hosts the website and database. The hosting operator controls the code delivered to your browser and may process service metadata. If you choose a map link, your browser opens OpenStreetMap with the coordinates you selected. If you open a phone or messaging composer, that app receives the information you included.</p></section>
+        <section><h2>Missing protections</h2><p>This prototype does not have phone OTP, email verification, multi-factor authentication, an independent penetration test, or a verified global emergency-number directory. Keep your password, recovery codes, and private-data passphrase safe. If you lose every recovery code and forget your password, the account cannot currently be recovered.</p></section>
+        <p class="privacy-back"><a href="index.html">Return to KinGuardian</a> · <a href="register.html">Create a free account</a></p>
+      </article>
+      <footer class="auth-footer"><span>KinGuardian</span><span>Updated 6 November 2026</span></footer>
+</main>
+</body>
+</html>
+
