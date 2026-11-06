@@ -7,7 +7,7 @@ export async function onRequestGet(context) {
     const session = await requireSession(context);
     if (session.response) return session.response;
     const rows = await context.env.DB.prepare(`
-      SELECT s.checkin_id, s.status, s.local_date, s.local_time, s.timezone,
+      SELECT s.checkin_id, s.status, s.local_date, s.local_time, s.timezone, s.idempotency_key,
              s.scheduled_for_utc, s.grace_minutes, s.reminder_at_utc,
              s.created_at, s.updated_at, s.safe_at, s.cancelled_at, s.overdue_at,
              r.recipient_user_id, recipient.username AS recipient_username
@@ -24,6 +24,7 @@ export async function onRequestGet(context) {
       if (!item) {
         item = {
           checkinId: row.checkin_id,
+          isDaily: row.idempotency_key.startsWith("daily:"),
           status: row.status,
           localDate: row.local_date,
           localTime: row.local_time,

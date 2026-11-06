@@ -1,6 +1,6 @@
 # KinGuardian deployment status and next steps
 
-The Git-connected Cloudflare Pages project `kinguardian` is deployed at [https://kinguardian.pages.dev/](https://kinguardian.pages.dev/) from the `main` branch. Cloudflare reported a successful deployment after the Root directory field was left blank. The build uses `npm run build` and `dist`.
+The user reports that the Git-connected Cloudflare Pages project `kinguardian` is deployed at [https://kinguardian.pages.dev/](https://kinguardian.pages.dev/) from the `main` branch. The latest fixes described below are local source changes and are not included in that deployment until they are added to GitHub.
 
 The D1 database `kinguardian-db` exists. Its UUID is `941f2062-5aad-4e68-ae81-fc1b4fb9d7cb`, and the GitHub Wrangler files now use that UUID. This local project folder is an export without `.git` metadata, so edits made here do not automatically update GitHub. The live D1 migration state and production secrets still need to be checked in the Cloudflare account. The deployed page has not received a visual browser check because the computer-use safety check blocked navigation to it.
 
@@ -20,7 +20,7 @@ npx wrangler d1 migrations apply kinguardian-db --local
 npm run dev
 ```
 
-The Node.js test suite and release check are run after code changes. All sixteen migrations are included in local schema checks. Start the local preview with `npm run dev`, then open its address in a regular browser; visual QA has not been completed. Wrangler may show placeholder `Request.cf` values in local mode.
+The Node.js test suite and release check are run after code changes. All seventeen migrations are included in local schema checks. Start the local preview with `npm run dev`, then open its address in a regular browser; visual QA has not been completed. Wrangler may show placeholder `Request.cf` values in local mode.
 
 For local sign-in, add a strong `AUTH_RATE_LIMIT_SECRET` to the ignored root `.dev.vars`. Owner setup is disabled in the published app. To test push locally, generate VAPID keys with `npm run generate:vapid`, put the public key in root `.dev.vars`, and put the public key, private key, and contact subject in `worker/.dev.vars`. Keep private values on your machine.
 
@@ -118,19 +118,19 @@ Use the notification test action to validate a deliberately subscribed test devi
 
 - Cloudflare reported that the Pages project deployed successfully to `https://kinguardian.pages.dev/`. The previous failure was caused by entering `repository root` as a folder name; leaving the Root directory Path blank fixed the build.
 - GitHub has the real D1 UUID in both Wrangler files. This local export has now been updated to match.
-- `npm test`: 32 passed, 0 failed. `npm run check:release`: passed with 45 SHA-256-checked public assets. The build used `development` locally; Cloudflare's project form had `KG_RELEASE_TYPE=production`.
+- Latest local checks: `npm test` passed 65 tests. `npm run check:release` passed with 54 SHA-256-checked public assets. The Pages Functions bundle and scheduled Worker dry run both compiled successfully.
 - Current npm advisory status could not be checked because this environment could not resolve `registry.npmjs.org`. Python-only test scripts could not run because Python is not installed in the available shell.
-- Production migration notes in this document are historical and may be stale. Read the remote migration list before any database action; this code update itself does not add a migration. The scheduled Worker, VAPID push, and authenticated API flows remain unverified. No APK exists or has been signed.
+- A screenshot confirms migration `0017_daily_checkin_schedules.sql` is applied remotely and the scheduled Worker is deployed. Real Pages route behavior, VAPID push, and device delivery remain unverified. No APK exists or has been signed.
 - Visual verification of the public site remains incomplete because the computer-use safety restriction prevented browser automation.
 
 ## Manual production update
 
-This UI and route update does not include a database migration. Before changing production D1, check its current migration list and create a backup. Do not apply historical migrations based only on this guide.
+Migration `0017_daily_checkin_schedules.sql` is already applied according to the user's screenshot. Do not apply it again. Before a future production D1 change, check the current migration list and create a private backup.
 
 If you choose to publish the reviewed build, run the build and release checks first. These commands build the static files; they do not migrate D1 or deploy the site.
 
 ```powershell
-Set-Location 'C:\Users\krish\Downloads\KinGuardian\kinguardian-source-0.1.0\kinguardian'
+Set-Location 'C:\Users\krish\Documents\Codex\2026-11-05\files-pasted-by-the-user-kin'
 $env:Path = 'C:\Program Files\nodejs;' + $env:Path
 $env:KG_RELEASE_TYPE = 'production'
 npm.cmd ci
@@ -140,6 +140,6 @@ npm.cmd run check:release
 
 Wrangler must already be logged into the intended Cloudflare account. Keep any exported database backup and secret values outside the project and GitHub repository.
 
-These commands do not publish the site or change the remote database. After you upload the reviewed files to the connected GitHub repository, Cloudflare Pages can build and publish them using its existing settings.
+These commands do not publish the site or change the remote database. The daily check-in migration and Worker are already deployed. Upload the reviewed Pages files to the connected GitHub repository so Cloudflare Pages can build and publish them using its existing settings.
 
-The Pages build excludes legacy owner setup/admin routes and screens. It preserves old owner-related database records and migrations; no database cleanup is needed for this UI change.
+The Pages build excludes legacy owner setup/admin routes and screens. It preserves old owner-related database records and migrations; no database cleanup is needed.

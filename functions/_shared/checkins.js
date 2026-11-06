@@ -52,7 +52,7 @@ function localTimeToUtc(parts, timeZone) {
 
   const localAsUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute);
   const offsets = new Set();
-  for (let sample = localAsUtc - 36 * 60 * MINUTE; sample <= localAsUtc + 36 * 60 * MINUTE; sample += 3 * 60 * MINUTE) {
+  for (const sample of [localAsUtc - 36 * 60 * MINUTE, localAsUtc, localAsUtc + 36 * 60 * MINUTE]) {
     const inZone = partsInZone(sample, formatter);
     offsets.add(Date.UTC(inZone.year, inZone.month - 1, inZone.day, inZone.hour, inZone.minute) - sample);
   }
@@ -66,6 +66,111 @@ function localTimeToUtc(parts, timeZone) {
   }
   // If clocks move back and a local time occurs twice, use its first occurrence.
   return candidates[0];
+}
+
+function formatLocalDateTime(instant, timeZone) {
+  let formatter;
+  try {
+    formatter = new Intl.DateTimeFormat("en-GB", {
+      timeZone, year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+    });
+  } catch {
+    throw new RequestError(400, "INVALID_TIME_ZONE", "Choose a valid time zone, such as Asia/Kolkata.");
+  }
+  const parts = partsInZone(instant, formatter);
+  return {
+    localDate: String(parts.year).padStart(4, "0") + "-" + String(parts.month).padStart(2, "0") + "-" + String(parts.day).padStart(2, "0"),
+    localTime: String(parts.hour).padStart(2, "0") + ":" + String(parts.minute).padStart(2, "0"),
+  };
+}
+
+function addLocalDays(localDate, count) {
+  const [year, month, day] = localDate.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day + count));
+  return String(date.getUTCFullYear()).padStart(4, "0") + "-"
+    + String(date.getUTCMonth() + 1).padStart(2, "0") + "-"
+    + String(date.getUTCDate()).padStart(2, "0");
+}
+
+function resolveDailyLocalTime(localDate, localTime, timeZone) {
+  const [hour, minute] = localTime.split(":").map(Number);
+  const candidateAt = (advance) => {
+    const wallClock = new Date(Date.UTC(Number(localDate.slice(0, 4)), Number(localDate.slice(5, 7)) - 1,
+      Number(localDate.slice(8, 10)), hour, minute + advance));
+    const date = String(wallClock.getUTCFullYear()).padStart(4, "0") + "-"
+      + String(wallClock.getUTCMonth() + 1).padStart(2, "0") + "-"
+      + String(wallClock.getUTCDate()).padStart(2, "0");
+    const time = String(wallClock.getUTCHours()).padStart(2, "0") + ":"
+      + String(wallClock.getUTCMinutes()).padStart(2, "0");
+    const parts = parseLocalParts(date, time);
+    return { scheduledFor: localTimeToUtc(parts, timeZone), localDate: date, localTime: time };
+  };
+  try {
+    return candidateAt(0);
+  } catch (error) {
+    if (error.code !== "NONEXISTENT_LOCAL_TIME") throw error;
+  }
+  let lower = 0;
+  let upper = 180;
+  let result;
+  try {
+    result = candidateAt(upper);
+  } catch (error) {
+    if (error.code !== "NONEXISTENT_LOCAL_TIME") throw error;
+    throw new RequestError(400, "NONEXISTENT_LOCAL_TIME", "That daily time could not be found on this date. Choose another time.");
+  }
+  while (upper - lower > 1) {
+    const middle = Math.floor((lower + upper) / 2);
+    try {
+      result = candidateAt(middle);
+      upper = middle;
+    } catch (error) {
+      if (error.code !== "NONEXISTENT_LOCAL_TIME") throw error;
+      lower = middle;
+    }
+  }
+  return result;
+}
+
+export function parseDailyCheckinSchedule(body, now = Date.now()) {
+  if (typeof body.localTime !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/u.test(body.localTime)) {
+    throw new RequestError(400, "INVALID_CHECKIN_TIME", "Enter a valid daily check-in time.");
+  }
+  if (typeof body.timeZone !== "string" || body.timeZone.length < 1 || body.timeZone.length > 100) {
+    throw new RequestError(400, "INVALID_TIME_ZONE", "Choose a valid time zone, such as Asia/Kolkata.");
+  }
+  if (!Number.isInteger(body.graceMinutes) || body.graceMinutes < 0 || body.graceMinutes > 240) {
+    throw new RequestError(400, "INVALID_GRACE_PERIOD", "Choose a grace period from 0 to 240 minutes.");
+  }
+  if (typeof body.reminderEnabled !== "boolean" || typeof body.enabled !== "boolean") {
+    throw new RequestError(400, "INVALID_DAILY_CHECKIN", "Choose whether daily check-ins and reminders are enabled.");
+  }
+
+  const today = formatLocalDateTime(now, body.timeZone).localDate;
+  let next = resolveDailyLocalTime(today, body.localTime, body.timeZone);
+  if (next.scheduledFor <= now + MINUTE) {
+    next = resolveDailyLocalTime(addLocalDays(today, 1), body.localTime, body.timeZone);
+  }
+  return {
+    enabled: body.enabled,
+    localTime: body.localTime,
+    timeZone: body.timeZone,
+    graceMinutes: body.graceMinutes,
+    reminderEnabled: body.reminderEnabled,
+    nextLocalDate: body.enabled ? next.localDate : null,
+    nextLocalTime: body.enabled ? next.localTime : null,
+    nextCheckinAt: body.enabled ? next.scheduledFor : null,
+  };
+}
+
+export function nextDailyCheckinSchedule(localDate, localTime, timeZone) {
+  const parts = parseLocalParts(localDate, localTime);
+  if (!parts || typeof timeZone !== "string" || timeZone.length < 1 || timeZone.length > 100
+    || typeof localTime !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/u.test(localTime)) {
+    throw new RequestError(400, "INVALID_DAILY_CHECKIN", "The saved daily schedule needs to be updated before it can run.");
+  }
+  return resolveDailyLocalTime(addLocalDays(localDate, 1), localTime, timeZone);
 }
 
 export function parseCheckinSchedule(body, now = Date.now(), { allowPast = false } = {}) {

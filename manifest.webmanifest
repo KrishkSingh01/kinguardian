@@ -1,10 +1,10 @@
 {
-  "id": "/",
+  "id": "/dashboard.html",
   "name": "KinGuardian — Your safety. Your trusted circle.",
   "short_name": "KinGuardian",
   "description": "Stay connected with your trusted circle through consent-based safety tools.",
   "lang": "en",
-  "start_url": "/app.html",
+  "start_url": "/dashboard.html",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",

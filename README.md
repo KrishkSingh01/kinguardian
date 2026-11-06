@@ -2,7 +2,7 @@
 
 **Your safety. Your trusted circle.**
 
-KinGuardian is a private, zero-budget prototype for a trusted group. It is a responsive Progressive Web App built with HTML, custom CSS, vanilla JavaScript, Cloudflare Pages Functions, Cloudflare Workers, and D1.
+KinGuardian is a public, zero-budget prototype for people who choose to form a trusted circle. It is a responsive Progressive Web App built with HTML, custom CSS, vanilla JavaScript, Cloudflare Pages Functions, Cloudflare Workers, and D1.
 
 **Budget rule:** KinGuardian must not require paid plans, API credits, SMS, WhatsApp, email, or a custom domain. Read [ZERO_BUDGET_SCOPE.md](ZERO_BUDGET_SCOPE.md) for the free services, limits, and features that cannot honestly be promised without a free delivery provider.
 
@@ -18,11 +18,13 @@ KinGuardian is a private, zero-budget prototype for a trusted group. It is a res
 - A free, static emergency-information page with India’s verified nationwide 112 number. Other countries are labeled as not verified; the app does not guess emergency numbers or place calls itself.
 - Manual, user-reviewed SMS, email, and WhatsApp composer links from encrypted contacts. KinGuardian does not send or confirm these messages.
 - Time-limited location sharing encrypted separately for opted-in KinGuardian members. Browser location is requested only after a user click; the page pauses location reads when hidden and expires shares within 15–60 minutes.
-- Sixteen numbered D1 migrations, including consent, encrypted-payload, account setup, device pairing, location, check-in, notification, and communication-status tables.
+- Daily check-in schedules plus one-time check-ins, with local-time and daylight-saving handling. Missed-check-in alerts depend on the scheduled Worker, consent, push setup, and device support.
+- Seventeen numbered D1 migrations, including consent, encrypted-payload, account setup, device pairing, location, daily check-in, notification, and communication-status tables.
+- A current implementation and deployment checklist in [PROJECT_STATUS.md](PROJECT_STATUS.md).
 - Static checks and an in-memory SQLite migration check.
 - A separate scheduled Worker configuration for location expiry, server-side check-in/reminder processing, consent rechecks, and encrypted Web Push attempts.
 
-Notification events use idempotency keys and per-device retry records. The Worker sends generic, encrypted push content and reports only “provider accepted”; this does not prove a device displayed a notification. The Free-plan Cron path sends at most one device request per minute to keep CPU use bounded.
+Notification events use idempotency keys and per-device retry records. The Worker sends generic, encrypted push content and reports only “provider accepted”; this does not prove a device displayed a notification. The Free-plan Cron path processes at most two due daily schedules and sends at most one device request per minute to keep CPU use bounded.
 
 ## Requirements
 
@@ -95,7 +97,7 @@ Each member must sign in, read the settings explanation, and press **Enable on t
 
 Read [DATABASE_GUIDE.md](DATABASE_GUIDE.md) before changing the database. The existing database is `kinguardian-db`, with binding `DB` and UUID `941f2062-5aad-4e68-ae81-fc1b4fb9d7cb`. Both Wrangler configs use this UUID. Local D1 remains separate from the remote database.
 
-All sixteen migrations are included in local checks. At the last recorded check, production D1 had `0001`–`0014` applied and `0015_cloudflare_password_iterations.sql` pending. Back up D1 and apply all pending migrations before deploying this update. Migration `0015` stops if any user exists; migration `0016` only adds the recovery-code table.
+All seventeen migrations are included in local checks. Production migration status must be checked in Cloudflare before applying anything. Migration `0017_daily_checkin_schedules.sql` is additive and preserves existing rows; follow the migration order in `DATABASE_GUIDE.md` before deploying this source update.
 
 ## Accounts and password recovery
 
@@ -109,11 +111,11 @@ Sign-in uses a secure cookie that persists across normal browser restarts for up
 
 SOS alerts are recorded on the server. When VAPID is configured, an active Worker and recipient subscription exist, the recipient has opted in, and the relationship still permits alerts, the Worker can send a generic encrypted Web Push request. The UI reports push-service acceptance rather than device delivery. External contacts can be reached only through a user-reviewed manual composer. KinGuardian does not automatically send or confirm SMS, email, or WhatsApp messages. Location coordinates are encrypted for each selected KinGuardian member; the server still sees the participants and timing. Coordinates are sent to OpenStreetMap only after the user clicks its map link. Background location and emergency-services integrations are not connected. The emergency page is an informational directory, not an emergency dispatch service.
 
-Read [SECURITY.md](SECURITY.md) for what the prototype currently protects, its encryption plan, and known limitations. Never enter real emergency or sensitive personal information into a feature marked as preview.
+Read [SECURITY.md](SECURITY.md) for what the prototype currently protects, its encryption plan, and known limitations. Do not rely on the prototype for emergency response.
 
 ## Deployment
 
-The production site is hosted on Cloudflare Pages at `https://kinguardian.pages.dev`, using D1 database `kinguardian-db`. At the last recorded check, migrations `0001`–`0014` were applied remotely and `0015_cloudflare_password_iterations.sql` was pending. Apply `0015` before creating any account, then apply pending `0016_account_recovery_codes.sql` before deploying these account changes; see [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md). This update has not been deployed.
+The user reports that the production site is hosted on Cloudflare Pages at `https://kinguardian.pages.dev`, using D1 database `kinguardian-db`. A screenshot confirms migration `0017_daily_checkin_schedules.sql` is applied and the scheduled Worker is deployed. The updated Pages source still needs to be uploaded to GitHub. See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) and [PROJECT_STATUS.md](PROJECT_STATUS.md).
 
 See [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) for Git-connected Cloudflare Pages setup and [RELEASE_SECURITY.md](RELEASE_SECURITY.md) for the M15 release process, security checks, Android status, and the manual steps still required. These guides do not create resources or change production.
 
@@ -134,7 +136,7 @@ assets/                Local icons and static assets
 
 ## Known limitations
 
-- Node.js 26.13.0, npm 11.20.0, and Wrangler 4.158.0 are installed for this workspace. Run the JavaScript tests and release checksum check after changes; all sixteen migrations are included in local schema checks. At the last recorded check, production D1 had `0001`–`0014` applied and `0015` pending. Browser visual QA is still pending because browser control is disabled in this workspace. The Codex shell retains its pre-install PATH, so commands in this workspace prepend `C:\Program Files\nodejs` explicitly.
+- Node.js 26.13.0, npm 11.20.0, and Wrangler 4.158.0 are installed for this workspace. Run the JavaScript tests and release checksum check after changes; all seventeen migrations are included in local schema checks. Production migration status must be checked before any database change. Browser visual QA has not been performed in this workspace. The Codex shell retains its pre-install PATH, so commands in this workspace prepend `C:\Program Files\nodejs` explicitly.
 - The design prototype has not received a browser-based visual QA pass.
 - Authentication APIs have not been exercised in a signed-in browser session or against production Cloudflare D1/Pages. The shell blocked direct loopback requests, and no local `.dev.vars` secrets are configured.
 - External contact details and location-sharing private keys use client-side encryption under a user-held passphrase. Location updates use ECDH P-256 and HKDF per recipient; D1 stores ciphertext but can see account IDs, recipient choices, and timestamps. Key rotation, recovery, forward secrecy, and independent cryptographic review are not implemented. Phone numbers are parsed with the maintained `libphonenumber-js` package and stored in E.164 form; numbers and email addresses are not ownership-verified. Manual composer URLs hand text to the chosen app only after user action; the app cannot verify whether it opened, sent, or delivered the message. The prototype has no passphrase recovery; losing it can make contact details unreadable. Web Push configuration, real browser subscriptions, and provider acceptance have not been exercised here. The free Cron handler sends one device request per minute due to its 10 ms CPU limit; queues can be delayed for groups with many devices or events. QR flows and device pairing have source-level and local schema checks, but authenticated browser integration has not been exercised. Check-in time conversion uses the Worker's IANA timezone database and chooses the first occurrence when a daylight-saving transition repeats a local time.

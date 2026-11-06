@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "kinguardian-static-";
-const CACHE_NAME = `${CACHE_PREFIX}v12`;
+const CACHE_NAME = `${CACHE_PREFIX}v13`;
 const STATIC_ASSETS = [
   "./",
   "./index.html",
@@ -39,6 +39,7 @@ const STATIC_ASSETS = [
   "./js/sos.js",
   "./js/location.js",
   "./js/emergency.js",
+  "./js/install.js",
   "./js/checkins.js",
   "./js/notifications.js",
   "./assets/icons/kinguardian.svg",
@@ -115,7 +116,7 @@ self.addEventListener("push", (event) => {
       badge: "./assets/icons/kinguardian.svg",
       tag: `kinguardian-${PUSH_COPY[category] ? category : "update"}${notificationId ? `-${notificationId}` : ""}`,
       renotify: false,
-      data: { path: "/" },
+      data: { path: "/dashboard.html" },
     });
   })());
 });
@@ -123,7 +124,7 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   event.waitUntil((async () => {
-    const destination = new URL("/", self.location.origin).href;
+    const destination = new URL("/dashboard.html", self.location.origin).href;
     const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     const existing = windows.find((client) => new URL(client.url).origin === self.location.origin);
     if (existing) {

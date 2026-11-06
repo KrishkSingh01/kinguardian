@@ -97,24 +97,25 @@ Configure secrets through Cloudflare’s secret settings, never in GitHub or TOM
 
 Confirm the Pages `DB` binding points to this database. Check the production environment and keep production secrets separate from preview secrets. Never place the VAPID private key in Pages, GitHub variables, or browser assets.
 
-Before applying production migrations, review all migration files, confirm the intended account/project/database, and make a backup. At the last recorded check, production D1 migrations `0001`–`0014` were applied and `0015_cloudflare_password_iterations.sql` was pending. Apply `0015` before any account is created, then apply `0016_account_recovery_codes.sql`. Migration `0016` only adds the hash-only recovery-code table. This update has not been deployed.
+Before applying production migrations, review all migration files, confirm the intended account/project/database, and make a backup. The last recorded production migration status is historical and may be stale; check Cloudflare before acting. This source update adds additive migration `0017_daily_checkin_schedules.sql`. Apply it only after confirming that migrations `0001`–`0016` are already applied and `0017` is the only pending migration. This update has not been deployed from this workspace.
 
 References: [Cloudflare Pages Git integration](https://developers.cloudflare.com/pages/configuration/git-integration/), [build settings](https://developers.cloudflare.com/pages/configuration/build-configuration/), [D1 bindings](https://developers.cloudflare.com/pages/functions/bindings/), and [Pages Wrangler configuration](https://developers.cloudflare.com/pages/functions/wrangler-configuration/).
 
 ## Verification status
 
 - Node.js `26.13.0` and npm are installed for the current workspace.
-- `npm test`: 32 passed, 0 failed.
+- `npm test`: 65 passed, 0 failed.
 - `npm audit --audit-level=high` could not reach `registry.npmjs.org` in this environment, so current dependency advisory status was not verified.
-- `npm run check:release`: passed for KinGuardian `0.1.0` (`development`); all 45 public assets matched their recorded SHA-256 checksums. The build output did not include server source, known credential patterns, or prohibited private/executable file types.
+- `npm run check:release`: passed for KinGuardian `0.1.0` (`development`); all 54 public assets matched their recorded SHA-256 checksums. The build output did not include server source, known credential patterns, or prohibited private/executable file types.
+- Cloudflare Pages Functions build and the scheduled Worker's Wrangler dry run both compiled successfully without publishing.
 - Source inspection found no dynamic code evaluation (`eval`, `new Function`), HTML string injection APIs (`innerHTML`, `outerHTML`, `insertAdjacentHTML`), remote script tags, file-upload inputs, or iframes in the reviewed app source. This is a scoped source check, not a penetration test.
 - No APK, Android permissions, or signing keys exist in the project, so APK signature, installation, update, and Play Protect checks are not applicable yet.
-- The local D1 emulator can apply migrations `0001`–`0016`. At the last recorded check, remote migrations `0001`–`0014` were applied and `0015` was pending; `0016` is new.
+- The Node test suite applies all 17 migrations to an in-memory SQLite database. Python-only test scripts were not run because Python is unavailable in this shell.
 - The site has not received a visual or authenticated browser check; PWA install/update and public HTTPS behavior remain unverified.
 
 ## Remaining steps
 
-1. Check the current production D1 migration list and make a backup before any database change. This update adds no migration.
+1. Check the current production D1 migration list and make a backup before any database change. This update adds migration `0017_daily_checkin_schedules.sql`; see [DATABASE_GUIDE.md](DATABASE_GUIDE.md) for the required order.
 2. Build and review the Pages output. The build excludes owner setup/admin pages, scripts, and routes while preserving the legacy schema and user rows.
 3. Deploy only when you choose to publish. This workspace does not deploy to production.
 4. Visually inspect the public site and test authenticated flows with non-sensitive test data. Do not use a real SOS as a test.
