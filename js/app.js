@@ -41,7 +41,7 @@ function navigate(viewName) {
 function setTheme(theme) {
   const accepted = ["system", "light", "dark"].includes(theme) ? theme : "system";
   document.documentElement.dataset.theme = accepted;
-  localStorage.setItem("kinguardian-theme", accepted);
+  try { localStorage.setItem("kinguardian-theme", accepted); } catch { /* Keep the current page usable when storage is blocked. */ }
   if (themeSelect) themeSelect.value = accepted;
   const followsDarkSystem = accepted === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches;
   const useDarkColors = accepted === "dark" || followsDarkSystem;
@@ -232,7 +232,8 @@ function updateConnectionStatus() {
 window.addEventListener("online", updateConnectionStatus);
 window.addEventListener("offline", updateConnectionStatus);
 
-const storedTheme = localStorage.getItem("kinguardian-theme") || "system";
+let storedTheme = "system";
+try { storedTheme = localStorage.getItem("kinguardian-theme") || "system"; } catch { /* Use the system theme when storage is blocked. */ }
 setTheme(storedTheme);
 navigate(location.hash.slice(1) || "home");
 

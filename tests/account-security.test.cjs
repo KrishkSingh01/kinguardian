@@ -50,7 +50,36 @@ test("all numbered migrations include constrained setup and pairing tables", () 
     db.prepare("SELECT COUNT(*) AS count FROM sqlite_schema WHERE type = 'index' AND name = 'one_open_account_setup_token_per_purpose'").get().count,
     1,
   );
-  assert.equal(db.prepare("SELECT COUNT(*) AS count FROM sqlite_schema WHERE type = 'table'").get().count, 31);
+  assert.equal(db.prepare("SELECT COUNT(*) AS count FROM sqlite_schema WHERE type = 'table'").get().count, 33);
+  assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
+  db.close();
+});
+
+test("daily check-in plans are private per user and store only consented member links", () => {
+  const db = migratedDatabase();
+  addUser(db, "daily-owner", "daily-owner", "member");
+  addUser(db, "daily-contact", "daily-contact", "member");
+  const columns = db.prepare("PRAGMA table_info(daily_checkin_settings)").all().map((column) => column.name);
+  assert.ok(columns.includes("timezone"));
+  assert.ok(columns.includes("next_checkin_at_utc"));
+  db.prepare(`
+    INSERT INTO daily_checkin_settings (
+      user_id, enabled, local_time, timezone, grace_minutes, reminder_enabled,
+      next_local_date, next_local_time, next_checkin_at_utc, updated_at
+    ) VALUES (?, 1, '20:00', 'Asia/Kolkata', 10, 1, '2026-11-06', '20:00', 1000, 1)
+  `).run("daily-owner");
+  db.prepare("INSERT INTO daily_checkin_recipients (user_id, recipient_user_id, created_at) VALUES (?, ?, ?)")
+    .run("daily-owner", "daily-contact", 1);
+  assert.equal(db.prepare("SELECT COUNT(*) AS count FROM daily_checkin_recipients WHERE user_id = ?").get("daily-owner").count, 1);
+  assert.throws(() => db.prepare("INSERT INTO daily_checkin_recipients (user_id, recipient_user_id, created_at) VALUES (?, ?, ?)")
+    .run("daily-owner", "daily-contact", 1));
+  assert.throws(() => db.prepare("INSERT INTO daily_checkin_recipients (user_id, recipient_user_id, created_at) VALUES (?, ?, ?)")
+    .run("daily-owner", "daily-owner", 1));
+  assert.throws(() => db.prepare(`
+    INSERT INTO daily_checkin_settings (
+      user_id, enabled, local_time, timezone, grace_minutes, reminder_enabled, updated_at
+    ) VALUES (?, 1, '25:00', 'Asia/Kolkata', 10, 1, 1)
+  `).run("daily-contact"));
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
   db.close();
 });

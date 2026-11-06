@@ -78,6 +78,7 @@ def main() -> None:
         "communication_attempts", "user_sharing_keys", "encrypted_location_envelopes",
         "account_setup_tokens", "device_pairing_requests",
         "account_recovery_codes",
+        "daily_checkin_settings", "daily_checkin_recipients",
     }
     missing = expected - tables
     if missing:

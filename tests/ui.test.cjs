@@ -36,7 +36,7 @@ class FakeNode {
   close() { this.open = false; }
 }
 
-function createAppHarness() {
+function createAppHarness({ storageBlocked = false } = {}) {
   const views = ["home", "circle", "checkins", "settings"]
     .map((name) => new FakeNode({ view: name }));
   const navigation = ["home", "circle", "checkins", "settings"]
@@ -65,8 +65,8 @@ function createAppHarness() {
   };
   const storage = new Map();
   const localStorage = {
-    getItem: (key) => storage.get(key) || null,
-    setItem: (key, value) => storage.set(key, value),
+    getItem: (key) => { if (storageBlocked) throw new Error("storage blocked"); return storage.get(key) || null; },
+    setItem: (key, value) => { if (storageBlocked) throw new Error("storage blocked"); storage.set(key, value); },
   };
   const location = { hash: "", protocol: "file:" };
   const history = { replaceState(_state, _title, url) { location.hash = url.slice(url.indexOf("#")); } };
@@ -113,4 +113,11 @@ test("theme selection and offline notice update accessibly", () => {
   app.window.listeners.offline();
   assert.equal(app.nodes["#offline-notice"].hidden, false);
   assert.match(app.nodes["#live-status"].textContent, /offline/i);
+});
+
+test("theme controls remain usable when browser storage is blocked", () => {
+  const app = createAppHarness({ storageBlocked: true });
+  assert.equal(app.document.documentElement.dataset.theme, "system");
+  dispatchClick(app.document, ".theme-cycle", app.themeButtons[0]);
+  assert.equal(app.document.documentElement.dataset.theme, "light");
 });

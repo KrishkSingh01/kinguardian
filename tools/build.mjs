@@ -17,7 +17,7 @@ const staticFiles = [
 ];
 const staticDirectories = ["css", "assets"];
 const entryPoints = [
-  "app", "login", "register", "recover", "recovery-codes", "change-password", "pair-device", "contacts", "circle", "checkins", "invite", "sos", "location",
+  "app", "login", "register", "recover", "recovery-codes", "change-password", "pair-device", "contacts", "circle", "checkins", "invite", "sos", "location", "install",
   "notifications", "network-monitor", "emergency",
 ].map((name) => path.join(projectRoot, "js", `${name}.js`));
 

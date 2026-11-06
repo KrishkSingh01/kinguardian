@@ -129,6 +129,18 @@ test("root page is a public landing page with clear account and emergency paths"
   assert.ok(!page.includes('src="js/app.js"'));
 });
 
+test("published member pages explain recovery accurately and avoid region-specific call shortcuts", () => {
+  assert.match(source("register.html"), /one of the recovery codes shown after registration/u);
+  assert.ok(!source("register.html").includes("self-service password recovery is not available yet"));
+  assert.ok(!source("dashboard.html").includes('href="tel:112"'));
+  assert.match(source("dashboard.html"), /href="emergency\.html"/u);
+  assert.match(source("dashboard.html"), /Install KinGuardian/u);
+  assert.match(source("dashboard.html"), /does not create an APK/u);
+  assert.match(source("dashboard.html"), /daily-checkin-form/u);
+  assert.match(source("dashboard.html"), /Enable daily check-ins/u);
+  assert.match(source("js/checkins.js"), /\/api\/daily-checkin/u);
+});
+
 test("sign-in and registration offer Turnstile hooks with a strict server-verification policy", () => {
   for (const [page, id, action] of [["login.html", "login-turnstile", "login"], ["register.html", "register-turnstile", "register"]]) {
     assert.match(source(page), new RegExp(`id="${id}"[^>]*data-action="${action}"`, "u"));

@@ -1,6 +1,8 @@
 import { processPushQueue } from "./push-delivery.js";
+import { scheduleDueDailyCheckins } from "./daily-checkin-scheduler.js";
 
 async function processScheduledWork(DB, now) {
+  await scheduleDueDailyCheckins(DB, now);
   await DB.batch([
     DB.prepare(`UPDATE location_shares SET share_status = 'expired', stopped_at = ?
       WHERE share_status = 'active' AND expires_at <= ?`).bind(now, now),

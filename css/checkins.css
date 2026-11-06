@@ -1,4 +1,11 @@
 .checkin-manager { margin-top: 20px; }
+.daily-checkin-card { display: grid; gap: 13px; margin-bottom: 20px; border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 20px 22px; background: var(--surface); }
+.daily-checkin-card > p { margin: 0; color: var(--ink-muted); font-size: .78rem; line-height: 1.6; }
+.daily-checkin-card > .button { justify-self: start; }
+.daily-checkin-card .checkin-form-heading h3, .daily-checkin-card .checkin-form-heading h4 { margin: 0; font-size: 1.12rem; }
+.daily-checkin-card .checkin-item-status { margin: 0; }
+.daily-checkin-form { margin: 4px 0 0; padding: 18px; background: var(--surface-raised); }
+#install-app[hidden] { display: none; }
 .checkin-form { display: grid; gap: 17px; margin-bottom: 20px; border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 22px; background: var(--surface); }
 .checkin-form[hidden] { display: none; }
 .checkin-form-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
