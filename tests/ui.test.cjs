@@ -6,7 +6,7 @@ const vm = require("node:vm");
 
 const ROOT = path.resolve(__dirname, "..");
 const appSource = fs.readFileSync(path.join(ROOT, "js", "app.js"), "utf8")
-  .replace(/^import \{ requestJson \} from "\.\/auth-client\.js";\s*/u, "");
+  .replace(/^import .*?;\s*/gmu, "");
 
 class FakeNode {
   constructor(dataset = {}) {
@@ -37,9 +37,9 @@ class FakeNode {
 }
 
 function createAppHarness({ storageBlocked = false } = {}) {
-  const views = ["home", "circle", "checkins", "settings"]
+  const views = ["home", "circle", "journey", "notifications", "settings"]
     .map((name) => new FakeNode({ view: name }));
-  const navigation = ["home", "circle", "checkins", "settings"]
+  const navigation = ["home", "circle", "journey", "notifications", "settings"]
     .map((name) => new FakeNode({ nav: name }));
   const themeButtons = [new FakeNode(), new FakeNode()];
   const selectors = [
@@ -47,6 +47,8 @@ function createAppHarness({ storageBlocked = false } = {}) {
     "#dialog-primary", "#dialog-countdown", "#countdown-number", "#theme-select",
     ".notice-close", ".preview-notice", "#offline-notice", "#today-label",
     "#timezone-label", 'meta[name="theme-color"]', "#pwa-status",
+    "#account-indicator", ".profile-meta strong", ".profile-meta small", "#auth-blocker",
+    ".mobile-nav", "#app-shell", "#auth-blocker-title", "#auth-blocker-message",
   ];
   const nodes = Object.fromEntries(selectors.map((name) => [name, new FakeNode()]));
   const document = {
@@ -68,40 +70,40 @@ function createAppHarness({ storageBlocked = false } = {}) {
     getItem: (key) => { if (storageBlocked) throw new Error("storage blocked"); return storage.get(key) || null; },
     setItem: (key, value) => { if (storageBlocked) throw new Error("storage blocked"); storage.set(key, value); },
   };
-  const location = { hash: "", protocol: "file:" };
+  const location = { hash: "", protocol: "https:", assigned: "", replace() {}, assign(url) { this.assigned = url; } };
   const history = { replaceState(_state, _title, url) { location.hash = url.slice(url.indexOf("#")); } };
   const window = {
     listeners: {},
+    dispatched: [],
     matchMedia: () => ({ matches: false }),
     addEventListener(name, handler) { this.listeners[name] = handler; },
+    dispatchEvent(event) { this.dispatched.push(event); },
     setInterval(handler) { this.tick = handler; return 7; },
     clearInterval() { this.timerCleared = true; },
   };
   const navigator = { onLine: true };
+  class FakeCustomEvent { constructor(type, options = {}) { this.type = type; this.detail = options.detail; } }
   vm.runInNewContext(appSource, {
     document, window, localStorage, location, history, navigator, Intl, Date,
+    CustomEvent: FakeCustomEvent,
     requestJson: async () => ({ ok: true }),
   });
-  return { document, views, navigation, nodes, themeButtons, window, navigator, localStorage };
+  return { document, views, navigation, nodes, themeButtons, window, navigator, localStorage, location };
 }
 
 function dispatchClick(document, selector, node) {
   document.listeners.click({ target: { closest: (candidate) => candidate === selector ? node : null } });
 }
 
-test("navigation and SOS preview remain truthful", () => {
+test("navigation opens the real SOS screen instead of a preview", () => {
   const app = createAppHarness();
   assert.equal(app.views.find((view) => view.dataset.view === "home").hidden, false);
   dispatchClick(app.document, "[data-nav]", app.navigation.find((item) => item.dataset.nav === "circle"));
   assert.equal(app.views.find((view) => view.dataset.view === "circle").hidden, false);
   assert.equal(app.views.find((view) => view.dataset.view === "home").hidden, true);
   dispatchClick(app.document, "[data-action]", new FakeNode({ action: "sos-preview" }));
-  assert.equal(app.nodes["#app-dialog"].open, true);
-  assert.match(app.nodes["#dialog-title"].textContent, /cannot reach anyone/i);
-  app.nodes["#dialog-primary"].events.click();
-  for (let tick = 0; tick < 5; tick += 1) app.window.tick();
-  assert.equal(app.nodes["#dialog-title"].textContent, "No alert was sent.");
-  assert.match(app.nodes["#dialog-copy"].children[0].textContent, /No alert was created or sent/i);
+  assert.equal(app.location.assigned, "sos.html");
+  assert.equal(app.nodes["#app-dialog"].open, false);
 });
 
 test("theme selection and offline notice update accessibly", () => {
@@ -113,6 +115,7 @@ test("theme selection and offline notice update accessibly", () => {
   app.window.listeners.offline();
   assert.equal(app.nodes["#offline-notice"].hidden, false);
   assert.match(app.nodes["#live-status"].textContent, /offline/i);
+  assert.equal(app.window.dispatched.at(-1).type, "kg:offline");
 });
 
 test("theme controls remain usable when browser storage is blocked", () => {

@@ -5,6 +5,15 @@
     "/api/owner/*",
     "/api/auth/bootstrap",
     "/api/auth/bootstrap-status",
-    "/api/auth/setup-password"
+    "/api/auth/setup-password",
+    "/api/checkins/*",
+    "/api/checkins",
+    "/api/daily-checkin",
+    "/api/contacts/*",
+    "/api/contacts",
+    "/api/vault/*",
+    "/api/vault",
+    "/api/invitations/*",
+    "/api/invitations"
   ]
 }

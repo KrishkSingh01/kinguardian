@@ -60,7 +60,7 @@ test("service worker caches only the static shell and bypasses APIs", async () =
   let pending;
   worker.handlers.install({ waitUntil: (promise) => { pending = promise; } });
   await pending;
-  assert.equal(worker.installed.length, 42);
+  assert.equal(worker.installed.length, 38);
   assert.ok(worker.installed.includes("./dashboard.html"));
   assert.ok(worker.installed.includes("./privacy.html"));
   assert.ok(worker.installed.includes("./css/landing.css"));
@@ -74,20 +74,23 @@ test("service worker caches only the static shell and bypasses APIs", async () =
   assert.ok(worker.installed.includes("./js/pair-device.js"));
   assert.ok(worker.installed.includes("./sos.html"));
   assert.ok(worker.installed.includes("./css/sos.css"));
-  assert.ok(worker.installed.includes("./js/sos.js"));
+  assert.ok(worker.installed.includes("./js/sos-activation.js"));
   assert.ok(worker.installed.includes("./location.html"));
   assert.ok(worker.installed.includes("./emergency.html"));
   assert.ok(worker.installed.includes("./css/emergency.css"));
   assert.ok(worker.installed.includes("./js/emergency.js"));
   assert.ok(worker.installed.includes("./css/location.css"));
   assert.ok(worker.installed.includes("./js/location.js"));
-  assert.ok(worker.installed.includes("./css/checkins.css"));
-  assert.ok(worker.installed.includes("./js/checkins.js"));
+  assert.ok(!worker.installed.includes("./css/checkins.css"));
+  assert.ok(!worker.installed.includes("./js/checkins.js"));
   assert.ok(worker.installed.includes("./css/notifications.css"));
   assert.ok(worker.installed.includes("./js/notifications.js"));
   assert.ok(worker.installed.includes("./js/install.js"));
   assert.equal(JSON.parse(require("node:fs").readFileSync(require("node:path").join(__dirname, "..", "manifest.webmanifest"), "utf8")).start_url, "/dashboard.html");
-  assert.ok(worker.installed.includes("./js/auth-client.js"));
+  assert.ok(!worker.installed.includes("./js/auth-client.js"));
+  assert.ok(worker.installed.includes("./js/map-experience.js"));
+  assert.ok(worker.installed.includes("./js/network-monitor.js"));
+  assert.ok(!worker.installed.includes("./js/offline-store.js"));
   assert.equal(worker.self.skippedWaiting, true);
 
   worker.handlers.activate({ waitUntil: (promise) => { pending = promise; } });
@@ -156,5 +159,5 @@ test("push copy is generic and notification clicks stay on the app origin", asyn
     waitUntil: (promise) => { pending = promise; },
   });
   await pending;
-  assert.deepEqual(worker.openedWindows, ["https://kin.test/dashboard.html"]);
+  assert.deepEqual(worker.openedWindows, ["https://kin.test/dashboard.html#notifications"]);
 });

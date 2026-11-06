@@ -1,13 +1,11 @@
 const CACHE_PREFIX = "kinguardian-static-";
-const CACHE_NAME = `${CACHE_PREFIX}v13`;
+const CACHE_NAME = `${CACHE_PREFIX}v16`;
 const STATIC_ASSETS = [
   "./",
   "./index.html",
   "./dashboard.html",
   "./privacy.html",
   "./pair-device.html",
-  "./contacts.html",
-  "./invite.html",
   "./sos.html",
   "./location.html",
   "./emergency.html",
@@ -20,28 +18,26 @@ const STATIC_ASSETS = [
   "./css/animations.css",
   "./css/responsive.css",
   "./css/pair-device.css",
-  "./css/contacts.css",
   "./css/circle.css",
-  "./css/invite.css",
   "./css/sos.css",
   "./css/location.css",
   "./css/emergency.css",
   "./css/landing.css",
   "./css/privacy.css",
-  "./css/checkins.css",
   "./css/notifications.css",
+  "./css/journey.css",
   "./js/app.js",
-  "./js/auth-client.js",
   "./js/pair-device.js",
-  "./js/contacts.js",
-  "./js/circle.js",
-  "./js/invite.js",
-  "./js/sos.js",
+  "./js/trusted-people.js",
+  "./js/sos-activation.js",
   "./js/location.js",
+  "./js/map-experience.js",
   "./js/emergency.js",
   "./js/install.js",
-  "./js/checkins.js",
+  "./js/safe-journey.js",
+  "./js/notification-center.js",
   "./js/notifications.js",
+  "./js/network-monitor.js",
   "./assets/icons/kinguardian.svg",
 ];
 
@@ -90,8 +86,10 @@ self.addEventListener("fetch", (event) => {
 const PUSH_COPY = {
   sos: "A trusted circle member needs your attention.",
   invitation: "A trusted-circle update is ready.",
-  checkin_reminder: "A KinGuardian check-in reminder is ready.",
-  missed_checkin: "A safety check-in needs attention.",
+  journey_started: "A trusted person started a Safe Journey.",
+  journey_extended: "A trusted person extended a Safe Journey.",
+  journey_completed: "A trusted person completed a Safe Journey.",
+  journey_overdue: "A trusted person’s return timer has expired. Please check if they are safe.",
   acknowledgement: "A trusted circle member has acknowledged an alert.",
   account_security: "There is an account security update.",
   test: "Your KinGuardian test notification arrived.",
@@ -124,7 +122,7 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   event.waitUntil((async () => {
-    const destination = new URL("/dashboard.html", self.location.origin).href;
+    const destination = new URL("/dashboard.html#notifications", self.location.origin).href;
     const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     const existing = windows.find((client) => new URL(client.url).origin === self.location.origin);
     if (existing) {

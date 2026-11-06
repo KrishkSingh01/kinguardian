@@ -1,131 +1,73 @@
 # KinGuardian database guide
 
-KinGuardian uses Cloudflare D1, which is SQLite-compatible. The required database name is `kinguardian-db`; the application binding is `DB`.
+This guide is for the existing Cloudflare D1 database named `kinguardian-db`. Do not create a second database. The binding name is `DB`. The UUID in the current source is `941f2062-5aad-4e68-ae81-fc1b4fb9d7cb`.
 
-## Before using Wrangler
+The user's screenshot showed migration `0017_daily_checkin_schedules.sql` applied on 6 November 2026. A read-only Wrangler list was attempted from this workspace, but Cloudflare could not be reached because of a connection/proxy restriction. The current remote list is still unknown. Always use Wrangler's live list before a production change.
 
-Install [Node.js 26.13.0 LTS for Windows x64](https://nodejs.org/dist/v26.13.0/node-v26.13.0-x64.msi) with npm. Reopen PowerShell after installation. From this project directory run:
+## 1. Open PowerShell in the project folder
 
-```powershell
-npm ci
-```
-
-Wrangler is a local development dependency in `package.json`.
-
-## Configure local D1
-
-The Wrangler files point to the existing Cloudflare D1 database `kinguardian-db` (UUID `941f2062-5aad-4e68-ae81-fc1b4fb9d7cb`). Local Wrangler mode keeps its own separate database state; use `--local` for local development. Local setup does not change the remote database.
+Use a new PowerShell window. If PowerShell blocks `npx.ps1`, call the `.cmd` program directly:
 
 ```powershell
-npm run build
-npx wrangler d1 migrations list kinguardian-db --local
-npx wrangler d1 migrations apply kinguardian-db --local
-npm run dev
+Set-Location 'C:\Users\krish\Downloads\kinguardian-source-0.1.0\kinguardian'
+& 'C:\Program Files\nodejs\npx.cmd' wrangler d1 migrations list kinguardian-db --remote
 ```
 
-Use `npm run dev` to start the Pages preview at `http://localhost:8788`. The local emulator can apply all seventeen migrations. Visual QA remains pending because the Codex browser safety check stopped before opening the preview. Wrangler may fall back to a placeholder `Request.cf` object in local mode.
+Replace the folder above with the actual folder where you saved the source. This command only lists migrations; it does not change the database.
 
-Sign-in and rate limiting need one local secret. Owner setup is disabled and does not need a bootstrap secret. In PowerShell, generate a value:
+## 2. Make a private backup
+
+The backup contains private account, alert, and location data. Keep it outside the project and GitHub.
 
 ```powershell
-node -p "require('node:crypto').randomBytes(32).toString('base64url')"
+$backupPath = Join-Path $env:USERPROFILE 'Downloads\kinguardian-d1-backup-before-update.sql'
+& 'C:\Program Files\nodejs\npx.cmd' wrangler d1 export kinguardian-db --remote --output $backupPath
 ```
 
-Create an ignored `.dev.vars` file in the project root and enter the value after `AUTH_RATE_LIMIT_SECRET=`. Do not use example strings as credentials, and do not commit `.dev.vars`. This secret is local-only; production secrets must be configured separately with Wrangler or in Cloudflare settings.
+Do not share or upload this file. Use a new filename for each backup so you do not overwrite an older one.
 
-## Check the existing remote database
+## 3. Review migration order
 
-The remote database already exists as `kinguardian-db`. Both Wrangler files use its UUID and the application binding name `DB`. The Cloudflare Pages site is deployed at `https://kinguardian.pages.dev/`.
+This source contains migrations `0001` through `0021`:
 
-At the last recorded check, production D1 had migrations `0001`–`0014` applied and migration `0015_cloudflare_password_iterations.sql` pending. Apply all pending migrations before deploying registration or password recovery. Migration `0015` requires an empty `users` table; migration `0016_account_recovery_codes.sql` only adds a table and can be applied after accounts exist.
+- `0018_safe_journeys.sql` creates Safe Journey tables and rebuilds notification tables while copying their existing rows. It preserves the old check-in tables and data.
+- `0019_encrypted_location_points.sql` adds encrypted location point storage.
+- `0020_journey_connection_permissions.sql` adds a default-off Safe Journey consent setting.
+- `0021_sos_encrypted_locations.sql` adds an SOS location timestamp and validation triggers. Existing encrypted payload columns were created in `0004`.
+
+These migrations are numbered and must apply in order. The source update did not apply any remote migration. After the backup, check the Wrangler migration list again. If a migration is pending, confirm which exact files are pending and that this is the right Cloudflare account and database before applying.
+
+To apply the pending migration files from the project root:
 
 ```powershell
-npx wrangler login
-npx wrangler d1 migrations list kinguardian-db --remote
+& 'C:\Program Files\nodejs\npx.cmd' wrangler d1 migrations apply kinguardian-db --remote
 ```
 
-The list command only checks migration status. Review the migration files and make a remote backup before running `npx wrangler d1 migrations apply kinguardian-db --remote`. Applying the schema to the live database changes production and should only be done after you confirm the correct account and database. Do not create another database with the same name.
+This changes production. Wrangler may ask you to confirm. Do not accept if the account, database, or migration list looks wrong. Do not use `d1 execute` to replay migration SQL by hand.
 
-The local database is stored by Wrangler under its local state directory. It is separate from the remote database. Cloudflare Pages Functions cannot use a remote D1 database through local preview, so continue to use local mode for development.
-
-## Apply production migrations
-
-First inspect the pending list:
+After applying, check again:
 
 ```powershell
-npx wrangler d1 migrations list kinguardian-db --remote
+& 'C:\Program Files\nodejs\npx.cmd' wrangler d1 migrations list kinguardian-db --remote
 ```
 
-Only after reviewing the exact migration files and taking a backup should an authorized operator run:
+Only deploy Pages code that expects migrations after confirming the schema is ready. If the command reports an error, stop and keep the backup; do not retry blindly.
+
+## Local checks
+
+Node's test suite applies all migrations to a temporary in-memory SQLite database. It does not connect to Cloudflare D1.
 
 ```powershell
-npx wrangler d1 migrations apply kinguardian-db --remote
+npm test
+npm run check:release
 ```
 
-Wrangler records migration history after applying. Back up production first. Apply migration `0015` before any account is created; apply migration `0016` before deploying registration and recovery-code pages. [Cloudflare D1 Wrangler commands](https://developers.cloudflare.com/d1/wrangler-commands/)
+For a separate local D1 database, run `npx.cmd wrangler d1 migrations apply kinguardian-db --local`. Local D1 is separate from production.
 
-## Owner and legacy setup data
+## Data safety
 
-The current public build does not provide an owner account or owner-only administration. Pages excludes `/api/owner/*`, `/api/auth/bootstrap`, `/api/auth/bootstrap-status`, and `/api/auth/setup-password`; the build also omits the old setup pages and scripts. Existing owner rows, audit data, migration files, and legacy route source are preserved. Do not delete or rewrite those records as part of this change. Ordinary registration still creates only `member` accounts.
-
-If `OWNER_BOOTSTRAP_SECRET` remains configured in Cloudflare, this build does not use it. Removing it from Cloudflare is a separate production configuration change. Do not remove or rotate it unless you have confirmed no other deployed release still uses it.
-
-## Inspect tables and data
-
-List tables in the local database:
-
-```powershell
-npx wrangler d1 execute kinguardian-db --local --command "SELECT name FROM sqlite_schema WHERE type = 'table' ORDER BY name;"
-```
-
-Use `--remote` only when you intentionally need to inspect the remote database. Avoid selecting private contact, location, or encrypted payload values into terminal logs.
-
-## Add a table or column
-
-Create a new, numbered migration instead of changing a migration that may already have been applied:
-
-```powershell
-npx wrangler d1 migrations create kinguardian-db describe_the_change
-```
-
-Write the SQL in the new file, test it locally, and keep it additive and backward-compatible where possible. To add a column, use `ALTER TABLE ... ADD COLUMN ...` in the new migration, then validate existing and new rows. Do not use `DROP`, destructive rewrites, or data-clearing statements without an explicit data-loss review.
-
-The first fourteen migrations create the prototype tables and add the encrypted international-contact envelope, default-off location consent, encrypted account-sharing keys, recipient-specific encrypted location envelopes, per-device Web Push delivery state, hash-only account setup tokens, and short-lived device-pairing requests. Migration `0015_cloudflare_password_iterations.sql` sets the account-password constraint to 100,000 PBKDF2 rounds, the Cloudflare Workers maximum. Migration `0016_account_recovery_codes.sql` adds a hash-only table for one-time password recovery codes. Migration `0017_daily_checkin_schedules.sql` adds one daily schedule and its selected member links per user; it does not rewrite existing check-ins or user data. Owner/bootstrap tables and tokens are legacy schema retained for compatibility; the public routes are disabled. Check the actual remote migration list before planning production changes; prior status notes may be stale. One-time and daily check-ins use `safety_checkins` and `safety_checkin_recipients`. The scheduled Worker creates one daily occurrence at a time, marks check-ins overdue, and creates idempotent events, then makes a bounded push attempt when VAPID and recipient consent are configured. A `provider_accepted` status is not a delivery receipt.
-
-### Daily check-in release order
-
-The source includes an additive migration and a Pages Function for daily settings. A screenshot from 6 November 2026 confirms that remote migration `0017` is applied and the scheduled Worker was deployed. Do not apply `0017` again. Before a future production database change, check the remote migration list and make a private backup using the steps above.
-
-The remaining release step for this update is publishing the Pages files to GitHub. The scheduled Worker has already been deployed according to the user's screenshot. If a future migration list shows any unexpected pending migration, stop and review it before applying anything.
-
-As checked on 2026-11-05, the Workers Free plan includes 5 million D1 rows read per day, 100,000 rows written per day, and 5 GB total D1 storage. Queries stop working after the daily read/write cap until 00:00 UTC; the free plan does not silently turn an overage into a paid upgrade. The Worker Cron CPU allowance is 10 ms per invocation, so this prototype sends at most one device push per minute. These limits can delay queued notifications. Check the current [D1 pricing and limits](https://developers.cloudflare.com/d1/platform/pricing/) and [Workers limits](https://developers.cloudflare.com/workers/platform/limits/) before relying on a production schedule.
-
-## Backups and restoration
-
-Export a remote database to a local SQL file before an intentional schema or data change:
-
-```powershell
-npx wrangler d1 export kinguardian-db --remote --output=./work/kinguardian-backup.sql
-```
-
-The export contains private user data. Keep it out of Git, restrict access, and delete it securely when it is no longer needed. `.gitignore` excludes backup files in `work/`.
-
-D1 also provides Time Travel point-in-time recovery. Cloudflare currently lists a 7-day Time Travel period for the Workers Free plan. A restore changes the live database in place and can overwrite current rows and tables; it is a recovery operation, not a routine test. Inspect the target time, download an export first, and require explicit authorization before restoring. [D1 Time Travel](https://developers.cloudflare.com/d1/reference/time-travel/), [D1 plan limits](https://developers.cloudflare.com/d1/platform/limits/)
-
-## Safe database updates
-
-1. Read the migration and confirm it does not drop or rewrite existing data.
-2. Apply it to the local database and run `tests/test_migrations.py`.
-3. Inspect the local schema and test affected application routes.
-4. Export a remote backup and review the remote migration list.
-5. Apply remotely only with explicit production authorization.
-6. Check the migration list and operational health afterward.
-
-## Troubleshooting
-
-- **Wrangler is not found:** run `npm install` in the project folder and use `npx wrangler ...`.
-- **Invalid database ID:** confirm that both Wrangler files use the existing UUID `941f2062-5aad-4e68-ae81-fc1b4fb9d7cb`.
-- **Binding not found:** the binding must be exactly `DB` in the Pages and scheduled Worker configurations.
-- **No local data appears:** Wrangler’s local D1 database is separate from remote D1. Confirm you used `--local` consistently and did not change the configured database UUID.
-- **Migrations are pending:** run `npx wrangler d1 migrations list kinguardian-db --local` and apply locally before testing.
-- **Quota errors:** reduce full-table scans, add indexes, and review current D1 Free quotas. If a quota is exceeded, the Free plan can return query errors until its reset.
+- Do not delete D1 tables or clear user records to fix a failed migration.
+- Do not restore a backup over production unless you intentionally choose to replace current data and have confirmed the target time and backup. A restore can overwrite newer changes.
+- A D1 export is private data. Keep it outside Git, `dist/`, and any public file-sharing folder.
+- The project keeps old check-in schema/history for compatibility. The public site no longer exposes the old check-in feature.
+- Location ciphertext can only be decrypted with the same `AUTH_RATE_LIMIT_SECRET` used when it was encrypted. Rotating that secret without first decrypting and re-encrypting saved locations will make those saved points unreadable. Never put the secret in GitHub or chat.

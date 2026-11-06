@@ -6,15 +6,15 @@ const path = require("node:path");
 const root = path.join(__dirname, "..");
 const load = (filename) => import(pathToFileURL(path.join(root, filename)));
 
-test("Turnstile is explicitly off only when both keys are absent", async () => {
+test("Turnstile is required and missing keys fail closed", async () => {
   const { getTurnstileConfiguration, verifyTurnstile } = await load("functions/_shared/turnstile.js");
-  assert.deepEqual(getTurnstileConfiguration({}), { mode: "off", siteKey: null });
+  assert.deepEqual(getTurnstileConfiguration({}), { mode: "misconfigured", siteKey: null });
   const result = await verifyTurnstile({
     env: {}, request: new Request("https://kinguardian.pages.dev/api/auth/login"),
     token: "", expectedAction: "login",
-    fetchImpl: () => { throw new Error("fetch should not run while Turnstile is off"); },
+    fetchImpl: () => { throw new Error("fetch should not run without configured Turnstile keys"); },
   });
-  assert.deepEqual(result, { ok: true, required: false });
+  assert.deepEqual(result, { ok: false, unavailable: true });
 });
 
 test("partial Turnstile configuration fails closed", async () => {

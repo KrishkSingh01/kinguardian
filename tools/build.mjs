@@ -12,13 +12,13 @@ if (!new Set(["development", "preview", "production"]).has(releaseType)) {
   throw new Error("KG_RELEASE_TYPE must be development, preview, or production.");
 }
 const staticFiles = [
-  "index.html", "dashboard.html", "login.html", "register.html", "recover.html", "change-password.html", "pair-device.html", "contacts.html", "invite.html", "sos.html", "location.html", "emergency.html", "privacy.html",
+  "index.html", "dashboard.html", "login.html", "register.html", "recover.html", "change-password.html", "pair-device.html", "sos.html", "location.html", "emergency.html", "privacy.html",
   "manifest.webmanifest", "service-worker.js", "_headers", "_routes.json",
 ];
 const staticDirectories = ["css", "assets"];
 const entryPoints = [
-  "app", "login", "register", "recover", "recovery-codes", "change-password", "pair-device", "contacts", "circle", "checkins", "invite", "sos", "location", "install",
-  "notifications", "network-monitor", "emergency",
+  "app", "login", "register", "recover", "recovery-codes", "change-password", "pair-device", "location", "install",
+  "notifications", "notification-center", "safe-journey", "trusted-people", "sos-activation", "network-monitor", "emergency", "map-experience",
 ].map((name) => path.join(projectRoot, "js", `${name}.js`));
 
 // dist is a generated directory. Start clean so stale files cannot leak into a release.
@@ -31,6 +31,9 @@ for (const directory of staticDirectories) {
   await cp(path.join(projectRoot, directory), path.join(outputRoot, directory), { recursive: true });
 }
 await rm(path.join(outputRoot, "css", "owner.css"), { force: true });
+for (const filename of ["contacts.css", "invite.css", "checkins.css"]) {
+  await rm(path.join(outputRoot, "css", filename), { force: true });
+}
 await mkdir(path.join(outputRoot, "js"), { recursive: true });
 await build({
   entryPoints,

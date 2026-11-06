@@ -1,43 +1,26 @@
-# Turn on free sign-in and sign-up bot checks
+# Check KinGuardian's Turnstile setup
 
-KinGuardian supports Cloudflare Turnstile on the sign-in and registration forms. The integration is **off until you add your own real keys**. While it is off, the existing server-side rate limits still run, but there is no CAPTCHA check. Cloudflare's free plan supports up to 20 widgets and unlimited challenges; check the current [Turnstile plans](https://developers.cloudflare.com/turnstile/plans/) before relying on those limits.
+You told me you already added Turnstile in Cloudflare. You do not need to create another widget. KinGuardian needs both values from that widget:
 
-## 1. Create a free Turnstile widget
+- `TURNSTILE_SITE_KEY` as a Production variable.
+- `TURNSTILE_SECRET_KEY` as an encrypted Production secret.
 
-1. Sign in to your Cloudflare dashboard.
-2. Open **Turnstile** from the left menu. If it is nested, expand **Security** first.
-3. Select **Add widget**.
-4. Enter a name such as `KinGuardian sign-in`.
-5. For **Hostnames**, enter exactly `kinguardian.pages.dev`. Do not add `https://`, a page path, or the Resend subdomain `send.kinguardian.dev`.
-6. Choose **Managed** mode.
-7. Select **Create**.
-8. Copy the **Sitekey** and **Secret key**. Keep the secret private.
+The secret must stay in Cloudflare. Do not put either value in GitHub or send it in chat. Login and registration stop safely if either value is missing or Cloudflare's check is unavailable.
 
-## 2. Add both values to the Pages project
+## 1. Check the public status
 
-1. In Cloudflare, open **Workers & Pages**.
-2. Select the existing Pages project **kinguardian**.
-3. Open **Settings** → **Variables and Secrets**.
-4. Under **Production**, select **Add**.
-5. Add the site key as a variable named `TURNSTILE_SITE_KEY`. The site key is public; it is okay for the browser to receive it.
-6. Select **Save**.
-7. Select **Add** again. Name the secret `TURNSTILE_SECRET_KEY`, paste the secret key, select **Encrypt**, then **Save**.
-8. If you also use Preview deployments, add a separate widget hostname and set both values under **Preview** too.
+Open this address in your browser:
 
-Never put the secret key in GitHub, an HTML or JavaScript file, a screenshot, or a message. The app's public configuration endpoint returns only the site key; the secret is used only by Pages Functions.
+`https://kinguardian.pages.dev/api/auth/turnstile-config`
 
-## 3. Publish the updated project
+When the live Production settings are ready, the response has `mode` set to `enabled`. It also shows the site key, which is public; do not copy it into chat. This workspace could not reach that address, so I could not verify your live status.
 
-Upload the updated project files to the connected GitHub repository and let Cloudflare Pages build them. The new Pages deployment must include the variables and secret above. This workspace update does not publish anything by itself.
+If the response has `mode` set to `misconfigured`, sign-in and registration are blocked. In Cloudflare, open **Workers & Pages** → **kinguardian** → **Settings** → **Variables and Secrets** → **Production**. Check that both names above exist there, that the secret is encrypted, and that the values come from the same Turnstile widget for `kinguardian.pages.dev`.
 
-## 4. Check that it is active
+## 2. Check the pages
 
-Open `https://kinguardian.pages.dev/api/auth/turnstile-config`. When both values are set, it should show `{"mode":"enabled","siteKey":"..."}`. The site key is public, so it is safe to see in that response. Then open the sign-in or registration page and confirm the Turnstile widget appears.
-
-If the endpoint says `off`, one or both values are missing from the active Production environment. If it says `misconfigured`, only one of the two values is set. If a Turnstile request fails after it is enabled, sign-in and registration stop safely until the check works again.
+After the status says enabled, open the sign-in and registration pages. The security check should appear. If it does not, check that the widget allows the exact hostname `kinguardian.pages.dev` and that its action matches the page.
 
 ## Local development
 
-For local testing, put your own Turnstile values in the ignored root `.dev.vars` file. Do not use production secrets on a shared computer. Local verification requires a widget whose allowed hostname matches the local preview hostname; use Cloudflare's documented test keys only for local development and never configure test keys on the live site.
-
-The server checks tokens with Cloudflare Siteverify and confirms the expected form action and request hostname. This server check is required: a browser widget alone does not protect the API. See Cloudflare's [server-side validation](https://developers.cloudflare.com/turnstile/get-started/server-side-validation/) and [CSP requirements](https://developers.cloudflare.com/turnstile/reference/content-security-policy/).
+Do not put your production secret in this folder or in GitHub. Local testing needs separate Turnstile test values in the ignored `.dev.vars` file and a widget/test hostname supported by Cloudflare. Never put test values on the live site.

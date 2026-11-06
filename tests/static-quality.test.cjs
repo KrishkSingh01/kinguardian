@@ -126,6 +126,7 @@ test("root page is a public landing page with clear account and emergency paths"
   assert.match(page, /href="login\.html"/u);
   assert.match(page, /href="emergency\.html"/u);
   assert.match(page, /KinGuardian is still a prototype/u);
+  assert.match(page, /Safe Journey timers/u);
   assert.ok(!page.includes('src="js/app.js"'));
 });
 
@@ -136,9 +137,19 @@ test("published member pages explain recovery accurately and avoid region-specif
   assert.match(source("dashboard.html"), /href="emergency\.html"/u);
   assert.match(source("dashboard.html"), /Install KinGuardian/u);
   assert.match(source("dashboard.html"), /does not create an APK/u);
-  assert.match(source("dashboard.html"), /daily-checkin-form/u);
-  assert.match(source("dashboard.html"), /Enable daily check-ins/u);
-  assert.match(source("js/checkins.js"), /\/api\/daily-checkin/u);
+  const dashboard = source("dashboard.html");
+  const routes = JSON.parse(source("_routes.json"));
+  assert.match(dashboard, /data-view="journey"/u);
+  assert.match(dashboard, /SOS is saved in the app/u);
+  assert.ok(!dashboard.includes("daily-checkin"), "daily check-ins were replaced by Safe Journey");
+  assert.ok(!dashboard.includes('data-view="checkins"'));
+  assert.ok(routes.exclude.includes("/api/daily-checkin"), "legacy daily-checkin API remains disabled");
+  assert.match(source("service-worker.js"), /Safe Journey/);
+  assert.ok(!source("service-worker.js").includes("./js/checkins.js"));
+  const location = source("location.html");
+  assert.match(location, /server can open them[^<]*not end-to-end encryption/u);
+  assert.match(location, /3D buildings/u);
+  assert.ok(!location.toLowerCase().includes("vault passphrase"));
 });
 
 test("sign-in and registration offer Turnstile hooks with a strict server-verification policy", () => {

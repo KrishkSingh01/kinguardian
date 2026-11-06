@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="css/base.css" />
     <link rel="stylesheet" href="css/auth.css" />
     <link rel="stylesheet" href="css/sos.css" />
-    <script type="module" src="js/sos.js"></script>
+    <script type="module" src="js/sos-activation.js"></script>
   </head>
   <body class="auth-page">
     <main class="sos-page">
@@ -23,63 +23,43 @@
       <header class="sos-heading">
         <p class="eyebrow">HELP, ON YOUR TERMS</p>
         <h1>Emergency SOS</h1>
-        <p>Use the countdown to review what will happen. KinGuardian does not contact emergency services.</p>
+        <p>Press the SOS button to start a fixed 10-second countdown. Cancel it any time before it ends.</p>
       </header>
 
       <section class="sos-warning" aria-labelledby="sos-warning-title">
         <span class="sos-warning-mark" aria-hidden="true">!</span>
-        <div><h2 id="sos-warning-title">What this prototype can do</h2><p>It can record an alert on the KinGuardian server and show it to selected members who open this page and refresh. This prototype does not send push, SMS, email, WhatsApp, or emergency-service messages. Do not rely on it for urgent help.</p></div>
+        <div><h2 id="sos-warning-title">When you need urgent help</h2><p>KinGuardian saves your SOS and creates in-app alerts for selected trusted people. Push depends on browser permission and setup. If location is available, its latest saved point is encrypted before it is stored. Location updates work only while this page is open and allowed. KinGuardian does not call emergency services. Call your local emergency number too.</p></div>
       </section>
 
       <section class="sos-compose-card" aria-labelledby="sos-compose-title">
-        <p class="eyebrow">START WITH A SAFE TEST</p>
-        <h2 id="sos-compose-title">Choose how to create this alert</h2>
-        <label class="test-mode-choice"><input id="test-mode" type="checkbox" checked /><span><strong>Test mode</strong><small>Creates a test record only for this account. No recipient or location can be included.</small></span></label>
-        <div class="sos-countdown-choices">
-          <label for="sos-countdown-duration">Countdown length</label>
-          <select class="select-control" id="sos-countdown-duration">
-            <option value="5" selected>5 seconds</option>
-            <option value="10">10 seconds</option>
-            <option value="15">15 seconds</option>
-            <option value="30">30 seconds</option>
-            <option value="60">60 seconds</option>
-            <option value="custom">Custom</option>
-          </select>
-          <label class="sos-custom-duration" id="sos-custom-duration-label" for="sos-custom-duration" hidden>Custom seconds (5–300)</label>
-          <input class="sos-custom-duration" id="sos-custom-duration" type="number" min="5" max="300" step="1" value="15" inputmode="numeric" hidden disabled />
-          <p class="field-hint">You can cancel before the alert record is submitted.</p>
-        </div>
-        <div class="sos-real-warning" id="real-alert-warning" hidden>
-          <strong>Real alert record</strong>
-          <p>The server will store an alert record for the selected KinGuardian members. No contact notification is sent by this prototype. Choose this only when you understand that limitation.</p>
-        </div>
-        <fieldset class="sos-recipient-fieldset" id="trusted-recipient-fieldset" disabled hidden>
+        <p class="eyebrow">EMERGENCY SOS</p>
+        <h2 id="sos-compose-title">Choose who can receive your SOS</h2>
+        <fieldset class="sos-recipient-fieldset" id="trusted-recipient-fieldset" disabled>
           <legend>KinGuardian members who allow SOS alerts</legend>
-          <p>Only accepted members who enabled SOS from you appear here. External contacts are not connected to SOS yet.</p>
+          <p>Only accepted trusted people who allow SOS alerts appear here. You can still save an SOS without selecting anyone; no trusted person will be notified.</p>
           <ul class="sos-recipient-list" id="sos-recipient-list"></ul>
-          <p class="field-hint" id="sos-recipient-empty">No eligible member recipients are available. You can create a test alert or manage your circle preferences.</p>
+          <p class="field-hint" id="sos-recipient-empty">No trusted people are ready. Add a trusted person and ask them to allow SOS alerts.</p>
           <a class="text-link" href="dashboard.html#circle">Manage trusted circle</a>
         </fieldset>
         <div class="sos-countdown-panel" id="sos-countdown-panel" hidden>
-          <span class="sos-countdown-number" id="sos-countdown-number" role="timer" aria-label="Seconds remaining" aria-live="off">5</span>
-          <div><strong>Alert countdown</strong><p>You can cancel before the server creates the alert.</p></div>
+          <span class="sos-countdown-number" id="sos-countdown-number" role="timer" aria-label="Seconds remaining" aria-live="off">10</span>
+          <div><strong>Alert countdown</strong><p>Your alert will be saved when the timer ends.</p></div>
           <button class="button button-outline" id="cancel-countdown" type="button">Cancel countdown</button>
         </div>
         <div class="sos-action-row">
-          <button class="button button-coral" id="start-countdown" type="button">Start 5-second countdown</button>
+          <button class="button button-coral sos-activate-button" id="start-countdown" type="button" disabled>Start SOS · 10 seconds</button>
           <button class="button button-dark" id="retry-alert" type="button" hidden>Retry alert submission</button>
         </div>
-        <a class="button button-outline manual-message-link" id="manual-message-link" href="#" hidden>Prepare a message to an external contact</a>
         <p class="form-message" id="sos-message" role="status" aria-live="polite">Checking your secure session…</p>
       </section>
 
       <section class="sos-history-card" aria-labelledby="sos-history-title">
         <div class="sos-section-heading"><div><p class="eyebrow">SERVER STATUS</p><h2 id="sos-history-title">Recent alerts</h2></div><button class="text-link" id="refresh-alerts" type="button">Refresh</button></div>
-        <p class="sos-history-note">Status updates only when this page is refreshed. No background notification or delivery is active.</p>
+        <p class="sos-history-note">This page checks for updates while it is open. Browser alerts depend on your device permission and push setup.</p>
         <ul class="sos-alert-list" id="sos-alert-list"></ul>
         <p class="field-hint" id="sos-alert-empty">No alerts are available for this account.</p>
       </section>
-      <p class="contacts-footer">If you are in immediate danger, use the emergency number verified for your current location or contact local emergency services directly.</p>
+      <p class="contacts-footer">If you are in immediate danger, call your local emergency service. In India, call 112.</p>
     </main>
   </body>
 </html>

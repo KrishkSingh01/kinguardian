@@ -50,8 +50,27 @@ test("all numbered migrations include constrained setup and pairing tables", () 
     db.prepare("SELECT COUNT(*) AS count FROM sqlite_schema WHERE type = 'index' AND name = 'one_open_account_setup_token_per_purpose'").get().count,
     1,
   );
-  assert.equal(db.prepare("SELECT COUNT(*) AS count FROM sqlite_schema WHERE type = 'table'").get().count, 33);
+  assert.equal(db.prepare("SELECT COUNT(*) AS count FROM sqlite_schema WHERE type = 'table'").get().count, 37);
+  assert.ok(db.prepare("PRAGMA table_info(sos_alerts)").all().some((column) => column.name === "location_time"));
+  assert.ok(db.prepare("PRAGMA table_info(trusted_connection_preferences)").all()
+    .some((column) => column.name === "receive_safe_journeys"));
+  assert.ok(db.prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = 'location_share_points'").get());
   assert.deepEqual(db.prepare("PRAGMA foreign_key_check").all(), []);
+  db.close();
+});
+
+test("encrypted location migrations reject malformed encrypted payloads", () => {
+  const db = migratedDatabase();
+  addUser(db, "location-sender", "location-sender", "member");
+  assert.throws(() => db.prepare(`INSERT INTO sos_alerts (
+    alert_id, client_alert_id, sender_user_id, sender_timezone,
+    location_ciphertext, location_iv, location_time, created_at
+  ) VALUES ('alert-bad', 'client-bad', 'location-sender', 'Etc/UTC', ?, ?, 1, 1)`)
+    .run(Buffer.from("short"), Buffer.alloc(12)));
+  assert.throws(() => db.prepare(`INSERT INTO location_share_points (
+    share_id, location_time, encrypted_point, iv, updated_at
+  ) VALUES ('missing-share', 1, ?, ?, 1)`)
+    .run(Buffer.alloc(20), Buffer.alloc(11)));
   db.close();
 });
 
@@ -169,7 +188,7 @@ test("account setup and device pairing credentials redeem at most once", () => {
   db.close();
 });
 
-test("owner and pairing route SQL compiles against all migrations", () => {
+test("application route SQL compiles against all migrations", () => {
   const db = migratedDatabase();
   const sources = [
     path.join(root, "functions", "api", "owner", "users", "index.js"),
@@ -180,6 +199,17 @@ test("owner and pairing route SQL compiles against all migrations", () => {
     path.join(root, "functions", "api", "auth", "recovery-codes.js"),
     path.join(root, "functions", "api", "auth", "bootstrap.js"),
     path.join(root, "functions", "api", "auth", "setup-password.js"),
+    path.join(root, "functions", "api", "connections", "index.js"),
+    path.join(root, "functions", "api", "connections", "[connection_id].js"),
+    path.join(root, "functions", "api", "journeys", "index.js"),
+    path.join(root, "functions", "api", "journeys", "[journey_id].js"),
+    path.join(root, "functions", "api", "sos", "index.js"),
+    path.join(root, "functions", "api", "sos", "[alert_id]", "location.js"),
+    path.join(root, "functions", "api", "location-shares", "index.js"),
+    path.join(root, "functions", "api", "location-shares", "[share_id]", "update.js"),
+    path.join(root, "functions", "api", "location-shares", "[share_id]", "leave.js"),
+    path.join(root, "functions", "api", "location-shares", "[share_id]", "stop.js"),
+    path.join(root, "worker", "safe-journey-scheduler.js"),
     ...readdirSync(path.join(root, "functions", "api", "device-pairing"))
       .filter((name) => name.endsWith(".js"))
       .map((name) => path.join(root, "functions", "api", "device-pairing", name)),
@@ -191,7 +221,11 @@ test("owner and pairing route SQL compiles against all migrations", () => {
     for (const match of source.matchAll(pattern)) {
       assert.ok(!match[1].includes("${"), `SQL interpolation in ${path.relative(root, filename)}`);
       const sql = match[1].trim();
-      db.prepare(`EXPLAIN ${sql}`).all(...Array((sql.match(/\?/gu) || []).length).fill(null));
+      try {
+        db.prepare(`EXPLAIN ${sql}`).all(...Array((sql.match(/\?/gu) || []).length).fill(null));
+      } catch (error) {
+        throw new Error(`Invalid SQL in ${path.relative(root, filename)}: ${sql}`, { cause: error });
+      }
       statements += 1;
     }
   }
@@ -219,6 +253,8 @@ test("public registration ignores a requested owner role and starts a member ses
   const insertedRecoveryCodes = [];
   const env = {
     AUTH_RATE_LIMIT_SECRET: "test-only-rate-limit-secret-that-is-long-enough",
+    TURNSTILE_SITE_KEY: "test-site-key",
+    TURNSTILE_SECRET_KEY: "test-secret-key",
     DB: {
       prepare(sql) {
         return {
@@ -249,9 +285,19 @@ test("public registration ignores a requested owner role and starts a member ses
       "content-type": "application/json",
       "cf-connecting-ip": "203.0.113.20",
     },
-    body: JSON.stringify({ username: "owner", password: "a strong test passphrase", role: "owner" }),
+    body: JSON.stringify({ username: "owner", password: "a strong test passphrase", role: "owner", turnstileToken: "test-token" }),
   });
-  const response = await onRequestPost({ request, env });
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    assert.equal(url, "https://challenges.cloudflare.com/turnstile/v0/siteverify");
+    return Response.json({ success: true, hostname: "kinguardian.test", action: "register" });
+  };
+  let response;
+  try {
+    response = await onRequestPost({ request, env });
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
   const body = await response.json();
   assert.equal(response.status, 201);
   assert.equal(body.user.username, "owner");

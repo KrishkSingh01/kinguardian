@@ -122,6 +122,15 @@ for (const filename of expectedPublicFiles) {
   if (!actualPublicFiles.includes(filename)) fail(`Release manifest lists a missing build file: ${filename}`);
 }
 
+const workerSource = await readFile(path.join(publicRoot, "service-worker.js"), "utf8");
+const assetList = workerSource.match(/const STATIC_ASSETS = \[([\s\S]*?)\];/u)?.[1];
+if (!assetList) fail("Service Worker static asset list could not be checked.");
+const cachedAssets = [...assetList.matchAll(/"([^"]+)"/gu)].map((match) => match[1]).filter((asset) => asset.startsWith("./"));
+for (const cachedAsset of cachedAssets) {
+  const target = cachedAsset === "./" ? "index.html" : cachedAsset.slice(2);
+  if (!actualPublicFiles.includes(target)) fail(`Service Worker caches a missing public asset: ${cachedAsset}`);
+}
+
 const routes = JSON.parse(await readFile(path.join(publicRoot, "_routes.json"), "utf8"));
 const disabledOwnerRoutes = [
   "/api/owner/*", "/api/auth/bootstrap", "/api/auth/bootstrap-status", "/api/auth/setup-password",

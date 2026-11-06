@@ -1,33 +1,27 @@
 # KinGuardian zero-budget scope
 
-This project must remain usable without buying a plan, domain, API credits, phone number, or paid software. Free services have limits; when a limit is reached, KinGuardian must show that the feature is unavailable instead of silently upgrading or claiming success.
+KinGuardian should remain usable without buying a plan, domain, phone number, API credits, or paid software. Free services can change or become unavailable, so the app must show an honest error instead of silently upgrading or claiming that an action succeeded.
 
-## Keep using
+## Services used
 
-- **Website:** Cloudflare Pages at `https://kinguardian.pages.dev`. No custom domain is required.
-- **Backend and database:** Cloudflare Pages Functions, Workers, and D1 on their free plans. Keep within current free quotas and expect requests to fail safely if a quota is reached.
-- **Bot checks:** Cloudflare Turnstile is integrated for login and registration with server-side Siteverify, action, and hostname checks. It still needs a real site key and secret configured in Cloudflare before the check turns on. Until then, only the existing rate limits protect those forms. See [TURNSTILE_SETUP.md](TURNSTILE_SETUP.md).
-- **Push notifications:** Browser Web Push and the existing Cloudflare Worker can be used without an SMS provider. It requires VAPID keys, user permission on each device, an active scheduled Worker, and successful acceptance by a push service. Acceptance does not prove the phone displayed the notification.
-- **Daily check-ins:** KinGuardian stores the daily time and time zone in D1, and the scheduled Worker creates each occurrence. Missed-check-in alerts still require the Worker, VAPID configuration, the recipient's consent, and a supported device. A queued push is not confirmed delivery.
-- **Open-source code:** Keep the existing vanilla JavaScript, custom CSS, and pinned open-source packages. Do not add a paid framework, hosted auth service, or paid map SDK.
-- **Email:** Paused at the user's request. Do not configure or depend on Resend for now.
+- **Website and backend:** Cloudflare Pages, Pages Functions, Workers, and D1 on their free plans. Limits and terms can change; review Cloudflare's [Workers limits](https://developers.cloudflare.com/workers/platform/pricing/) and [D1 limits](https://developers.cloudflare.com/d1/platform/pricing/) before relying on a quota.
+- **Bot checks:** Cloudflare Turnstile is required for login and registration and is checked on the server. Both a real public site key and secret must be in Cloudflare settings; until then, sign-in and registration fail closed. See [TURNSTILE_SETUP.md](TURNSTILE_SETUP.md).
+- **Maps:** MapLibre GL JS is open-source map software. KinGuardian loads its pinned browser module from unpkg and map tiles from OpenFreeMap, based on OpenStreetMap data. OpenFreeMap currently says its public instance is free without request limits or an API key, but it offers no service-level guarantee. It may change its service or terms. Map tiles require internet and the provider can see the map area requested by a browser. See the [OpenFreeMap quick start](https://openfreemap.org/quick_start/) and [service information](https://openfreemap.org/).
+- **Push alerts:** Browser Web Push has no SMS provider fee in this project. It still needs VAPID keys, a deployed scheduled Worker, a supported browser/device, and user permission. A push provider accepting a request does not prove that the person saw the alert.
+- **Email:** Paused at the user's request. Do not depend on Resend or another email service.
 
-## Do not promise as a free automated service
+## Features with no automated messaging provider
 
-- **Phone OTP by SMS:** A short trial is not a permanent free SMS service. Do not mark a phone as verified or claim an OTP was sent unless a real provider confirms it. Until a genuinely no-cost provider is available, keep the existing username/password and recovery-code path; explain that phone verification and SMS password recovery are unavailable.
-- **Automated SMS and WhatsApp:** Do not send through unofficial automation or a personal account. Existing user-opened SMS/WhatsApp composer links may remain, with a clear note that the user chooses whether to send and their carrier or data plan may charge them.
-- **3D maps:** Do not use a demo tile server or an API that requires a payment method without checking its production terms first. Keep location permission user-controlled and use the existing OpenStreetMap link for now. A genuine hosted 3D map needs a verified, sustainable free tile/terrain source before it can be enabled.
-- **Emergency delivery:** An SOS saved in D1, queued for push, or accepted by a push provider is not proof that a contact received it. Keep delivery wording precise and provide local emergency calling separately.
-- **Emergency directory:** Keep the directory static and free. Only show numbers verified from official sources; this release includes India's nationwide 112 number. For other countries, show that KinGuardian has no verified number instead of guessing. Adding a reliable global directory remains future work.
-
-## Current free-plan limits to watch
-
-As checked on 2026-11-06, Cloudflare documents Workers Free at 100,000 requests per day and 10 ms CPU time per invocation. D1 Free documents 5 million rows read per day, 100,000 rows written per day, and 5 GB total storage. These limits can change; check Cloudflare's current [Workers pricing and limits](https://developers.cloudflare.com/workers/platform/pricing/) and [D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/) before relying on them. Reaching a limit can make a feature unavailable until the quota resets.
+- **SMS, phone OTP, and WhatsApp:** No provider is configured. Do not claim that a message or verification code was sent. Do not use unofficial automation or a personal account to send messages.
+- **Email recovery:** Not available. Users use their one-time recovery codes; losing all recovery codes and the password may mean the account cannot be recovered.
+- **Emergency response:** KinGuardian does not call emergency services. SOS can be stored and in-app notices can be prepared for trusted people who opted in. Web Push is best effort. In immediate danger, call the local emergency number directly.
+- **Emergency directory:** Keep the directory static and show only verified numbers. The current release includes India's nationwide 112 number; for locations without a verified number, the app must say so instead of guessing.
 
 ## Required behavior
 
-- Never add a chargeable API or service as a required dependency.
-- Never ask the app to upgrade a plan automatically.
+- Never add a paid API or service as a required feature.
+- Never auto-upgrade a Cloudflare plan or start a paid trial.
 - Keep secrets in Cloudflare's encrypted settings or ignored local files, never in GitHub source.
-- Show a clear unavailable/error state when a free service is missing, over quota, or not configured.
-- Keep emergencies independent of a map, email setup, or location permission.
+- Show a clear unavailable/error state if a free service is missing, over quota, or not configured.
+- Keep SOS available without map tiles, email setup, or location permission. If offline, say clearly that the SOS is saved on the device and nobody has been notified yet.
+- Preserve old check-in database tables and migrations for data safety, but do not present daily check-ins as a current public feature. Safe Journey is the current journey workflow.

@@ -12,8 +12,10 @@ const CLAIM_MS = 45_000;
 const CATEGORY_PREFERENCE = {
   sos: "sos_enabled",
   invitation: "invitations_enabled",
-  checkin_reminder: "checkin_reminders_enabled",
-  missed_checkin: "missed_checkins_enabled",
+  journey_started: "safe_journeys_enabled",
+  journey_extended: "safe_journeys_enabled",
+  journey_completed: "safe_journeys_enabled",
+  journey_overdue: "safe_journeys_enabled",
   acknowledgement: "acknowledgements_enabled",
   account_security: "account_security_enabled",
 };
@@ -256,24 +258,6 @@ async function eventStillEligible(DB, event, now) {
     case "test":
     case "account_security":
       return true;
-    case "checkin_reminder":
-      return Boolean(await DB.prepare(`SELECT 1 FROM safety_checkins
-        WHERE checkin_id = ? AND user_id = ? AND status = 'pending'
-          AND reminder_at_utc IS NOT NULL AND reminder_at_utc <= ?`)
-        .bind(event.checkin_id, event.user_id, now).first());
-    case "missed_checkin":
-      return Boolean(await DB.prepare(`SELECT 1
-        FROM safety_checkins AS s
-        JOIN safety_checkin_recipients AS r ON r.checkin_id = s.checkin_id
-          AND r.recipient_user_id = ?
-        JOIN users AS sender ON sender.user_id = s.user_id AND sender.account_status = 'active'
-        JOIN trusted_connections AS c ON c.connection_status = 'accepted'
-          AND ((c.user_low_id = s.user_id AND c.user_high_id = ?)
-            OR (c.user_high_id = s.user_id AND c.user_low_id = ?))
-        JOIN trusted_connection_preferences AS cp ON cp.connection_id = c.connection_id
-          AND cp.recipient_user_id = ? AND cp.receive_missed_checkin = 1
-        WHERE s.checkin_id = ? AND s.status = 'overdue'`)
-        .bind(event.user_id, event.user_id, event.user_id, event.user_id, event.checkin_id).first());
     case "sos":
       return Boolean(await DB.prepare(`SELECT 1 FROM sos_alerts AS a
         JOIN users AS sender ON sender.user_id = a.sender_user_id AND sender.account_status = 'active'
@@ -285,11 +269,37 @@ async function eventStillEligible(DB, event, now) {
           AND cp.recipient_user_id = ? AND cp.receive_sos = 1
         WHERE a.alert_id = ? AND a.test_mode = 0 AND a.alert_status NOT IN ('resolved', 'closed')`)
         .bind(event.user_id, event.user_id, event.user_id, event.user_id, event.related_resource_id).first());
+    case "journey_started":
+    case "journey_extended":
+    case "journey_completed":
+    case "journey_overdue":
+      return Boolean(await DB.prepare(`SELECT 1
+        FROM safe_journeys AS journey
+        JOIN users AS owner ON owner.user_id = journey.user_id AND owner.account_status = 'active'
+        LEFT JOIN notification_preferences AS preference ON preference.user_id = ?
+        WHERE journey.journey_id = ?
+          AND ((? IN ('journey_started', 'journey_extended') AND journey.status IN ('active', 'overdue'))
+            OR (? = 'journey_completed' AND journey.status = 'completed')
+            OR (? = 'journey_overdue' AND (journey.status = 'overdue'
+              OR (journey.status = 'completed' AND journey.overdue_at IS NOT NULL))))
+          AND COALESCE(preference.safe_journeys_enabled, 1) = 1
+          AND (journey.user_id = ? OR EXISTS (
+            SELECT 1 FROM safe_journey_recipients AS selected
+            JOIN trusted_connections AS connection ON connection.connection_status = 'accepted'
+              AND ((connection.user_low_id = journey.user_id AND connection.user_high_id = ?)
+                OR (connection.user_high_id = journey.user_id AND connection.user_low_id = ?))
+            JOIN trusted_connection_preferences AS permission ON permission.connection_id = connection.connection_id
+              AND permission.recipient_user_id = ? AND permission.receive_safe_journeys = 1
+            WHERE selected.journey_id = journey.journey_id AND selected.recipient_user_id = ?
+          ))`).bind(event.user_id, event.related_resource_id, event.category,
+        event.category, event.category, event.user_id, event.user_id, event.user_id,
+        event.user_id, event.user_id).first());
     case "invitation":
       return Boolean(await DB.prepare(`SELECT 1 FROM trusted_connections
-        WHERE connection_id = ? AND connection_status = 'accepted'
+        WHERE connection_id = ? AND ((connection_status = 'pending' AND requested_by_user_id <> ?)
+          OR (connection_status IN ('accepted', 'rejected') AND requested_by_user_id = ?))
           AND (user_low_id = ? OR user_high_id = ?)`)
-        .bind(event.user_id, event.related_resource_id, event.user_id).first());
+        .bind(event.related_resource_id, event.user_id, event.user_id, event.user_id, event.user_id).first());
     case "acknowledgement":
       return Boolean(await DB.prepare(`SELECT 1 FROM sos_alerts AS a
         JOIN users AS recipient ON recipient.user_id = ? AND recipient.account_status = 'active'

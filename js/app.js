@@ -1,4 +1,5 @@
 import { requestJson } from "./auth-client.js";
+import { cacheOfflineProfile, getOfflineProfile } from "./offline-store.js";
 
 const views = [...document.querySelectorAll("[data-view]")];
 const navButtons = [...document.querySelectorAll("[data-nav]")];
@@ -15,7 +16,8 @@ const themeSelect = document.querySelector("#theme-select");
 const viewTitles = {
   home: "A little more connected.",
   circle: "Your trusted circle.",
-  checkins: "A moment for you.",
+  journey: "Safe Journey.",
+  notifications: "Your updates.",
   settings: "Make it feel like yours.",
 };
 
@@ -110,15 +112,6 @@ function startPreviewCountdown() {
 }
 
 function previewAction(action) {
-  if (action === "checkin-preview") {
-    navigate("checkins");
-    document.querySelector("#new-checkin")?.click();
-    return;
-  }
-  if (action === "contact-preview" && location.protocol !== "file:") {
-    location.assign("contacts.html");
-    return;
-  }
   if (action === "sos-preview" && location.protocol !== "file:") {
     location.assign("sos.html");
     return;
@@ -129,7 +122,7 @@ function previewAction(action) {
   }
   if (action === "invite-preview" && location.protocol !== "file:") {
     navigate("circle");
-    document.querySelector("#create-invitation")?.click();
+    document.querySelector("#trusted-username")?.focus();
     return;
   }
   if (action === "logout") {
@@ -151,10 +144,6 @@ function previewAction(action) {
     "location-preview": {
       title: "Location remains your choice.",
       paragraphs: ["KinGuardian requests your device location only after you choose members and press Start on the location page.", "No location was read or shared by this preview."],
-    },
-    "contact-preview": {
-      title: "Your contacts stay private.",
-      paragraphs: ["Contact setup will be connected after account security is in place.", "This preview has not saved or shared any contact information."],
     },
     "invite-preview": {
       title: "Invitations need both people.",
@@ -228,6 +217,7 @@ function updateConnectionStatus() {
   const offline = !navigator.onLine;
   offlineNotice.hidden = !offline;
   if (offline) liveStatus.textContent = "You are offline. Server features cannot reach KinGuardian.";
+  if (offline) window.dispatchEvent(new CustomEvent("kg:offline"));
 }
 window.addEventListener("online", updateConnectionStatus);
 window.addEventListener("offline", updateConnectionStatus);
@@ -273,15 +263,32 @@ async function enforceSignedInSession() {
     document.querySelector(".profile-meta strong").textContent = payload.user.username;
     document.querySelector(".profile-meta small").textContent = "Signed-in account";
     document.querySelectorAll("[data-auth-only]").forEach((element) => { element.hidden = false; });
+    cacheOfflineProfile(payload.user);
+    window.dispatchEvent(new CustomEvent("kg:session", { detail: payload.user }));
     if (payload.user.mustChangePassword) location.replace("change-password.html");
   } catch {
-    document.querySelector("#app-shell").hidden = true;
-    document.querySelector(".mobile-nav").hidden = true;
-    document.querySelector("#auth-blocker").hidden = false;
-    document.querySelector("#auth-blocker-title").textContent = navigator.onLine ? "Sign-in is unavailable." : "You’re offline.";
-    document.querySelector("#auth-blocker-message").textContent = navigator.onLine
-      ? "KinGuardian could not verify your session. Sign in again when the service is available."
-      : "Reconnect before opening private KinGuardian information. No alert was sent.";
+    const blocker = document.querySelector("#auth-blocker");
+    const profile = navigator.onLine ? null : getOfflineProfile();
+    if (profile) {
+      blocker.hidden = true;
+      document.querySelector("#app-shell").hidden = false;
+      document.querySelector(".mobile-nav").hidden = false;
+      document.querySelector("#account-indicator").textContent = `Offline · ${profile.username}`;
+      document.querySelector(".profile-meta strong").textContent = profile.username;
+      document.querySelector(".profile-meta small").textContent = "Session not checked while offline";
+      document.querySelector('[data-view="journey"]').hidden = false;
+      document.querySelector(".journey-panel").hidden = false;
+      window.dispatchEvent(new CustomEvent("kg:offline"));
+    } else {
+      document.querySelector("#app-shell").hidden = true;
+      document.querySelector(".mobile-nav").hidden = true;
+      blocker.hidden = false;
+      document.querySelector("#auth-blocker-title").textContent = navigator.onLine ? "Sign-in is unavailable." : "You’re offline.";
+      document.querySelector("#auth-blocker-message").textContent = navigator.onLine
+        ? "KinGuardian could not verify your session. Sign in again when the service is available."
+        : "Sign in once on this device before using its offline Safe Journey timer. Emergency services are still available.";
+      window.dispatchEvent(new CustomEvent("kg:offline"));
+    }
   }
 }
 

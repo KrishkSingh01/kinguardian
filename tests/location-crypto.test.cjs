@@ -4,6 +4,20 @@ const { pathToFileURL } = require("node:url");
 const test = require("node:test");
 
 const encryptionUrl = pathToFileURL(path.resolve(__dirname, "../js/encryption.js"));
+const serverEncryptionUrl = pathToFileURL(path.resolve(__dirname, "../functions/_shared/location-crypto.js"));
+
+test("server-side location points are encrypted with account and share context", async () => {
+  const { encryptLocationPoint, decryptLocationPoint } = await import(serverEncryptionUrl);
+  const env = { AUTH_RATE_LIMIT_SECRET: "test-only-location-crypto-secret-0123456789" };
+  const point = { latitude: 51.5072, longitude: -0.1276, accuracy: 42, capturedAt: 1_800_000_000_000, source: "test" };
+  const encrypted = await encryptLocationPoint(env, "share-a", "owner-a", point);
+  assert.equal(encrypted.iv.length, 12);
+  assert.notEqual(Buffer.from(encrypted.ciphertext).includes(Buffer.from("51.5072")), true);
+  assert.deepEqual(await decryptLocationPoint(env, "share-a", "owner-a", encrypted.ciphertext, encrypted.iv), point);
+  await assert.rejects(() => decryptLocationPoint(env, "share-b", "owner-a", encrypted.ciphertext, encrypted.iv));
+  await assert.rejects(() => decryptLocationPoint(env, "share-a", "owner-b", encrypted.ciphertext, encrypted.iv));
+  await assert.rejects(() => encryptLocationPoint({ AUTH_RATE_LIMIT_SECRET: "short" }, "share-a", "owner-a", point), /not configured/u);
+});
 
 test("location envelopes encrypt for one trusted member and bind share context", async () => {
   const encryption = await import(encryptionUrl);
