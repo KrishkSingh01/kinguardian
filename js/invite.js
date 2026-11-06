@@ -68,7 +68,7 @@ async function respondToInvitation(action) {
       : "Invitation declined. It can no longer be accepted.", "success");
     decision.hidden = true;
     sessionStorage.removeItem("kg-pending-invite");
-    window.setTimeout(() => location.replace("index.html#circle"), 1800);
+    window.setTimeout(() => location.replace("app.html#circle"), 1800);
   } catch (error) {
     showMessage(inviteMessage, error.message || "This invitation could not be completed.");
     buttons.forEach((button) => { button.disabled = false; });

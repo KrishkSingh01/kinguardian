@@ -23,7 +23,7 @@ npx wrangler d1 migrations apply kinguardian-db --local
 npm run dev
 ```
 
-Use `npm run dev` to start the Pages preview at `http://localhost:8788`. The local emulator can apply all fifteen migrations. Visual QA remains pending because the Codex browser refused the preview under its safety restrictions; the shell also blocks direct loopback HTTP requests. Open the address manually in a regular browser. Wrangler may fall back to a placeholder `Request.cf` object in local mode.
+Use `npm run dev` to start the Pages preview at `http://localhost:8788`. The local emulator can apply all sixteen migrations. Visual QA remains pending because the Codex browser safety check stopped before opening the preview. Wrangler may fall back to a placeholder `Request.cf` object in local mode.
 
 The sign-in and one-time owner setup routes also need local secrets. In a regular PowerShell window, generate two different values:
 
@@ -38,7 +38,7 @@ Create an ignored `.dev.vars` file in the project root and enter the first value
 
 The remote database already exists as `kinguardian-db`. Both Wrangler files use its UUID and the application binding name `DB`. The Cloudflare Pages site is deployed at `https://kinguardian.pages.dev/`.
 
-Production D1 has migrations `0001`–`0014` applied. Migration `0015_cloudflare_password_iterations.sql` is pending. A read-only production count found zero user rows. Apply migration `0015` before deploying the matching account-password code:
+At the last recorded check, production D1 had migrations `0001`–`0014` applied and migration `0015_cloudflare_password_iterations.sql` pending. Apply all pending migrations before deploying registration or password recovery. Migration `0015` requires an empty `users` table; migration `0016_account_recovery_codes.sql` only adds a table and can be applied after accounts exist.
 
 ```powershell
 npx wrangler login
@@ -63,17 +63,17 @@ Only after reviewing the exact migration files and taking a backup should an aut
 npx wrangler d1 migrations apply kinguardian-db --remote
 ```
 
-Wrangler records migration history after applying. Production migration `0015` must be applied before owner setup. Make a backup first. [Cloudflare D1 Wrangler commands](https://developers.cloudflare.com/d1/wrangler-commands/)
+Wrangler records migration history after applying. Back up production first. Apply migration `0015` before any account is created; apply migration `0016` before deploying registration and recovery-code pages. [Cloudflare D1 Wrangler commands](https://developers.cloudflare.com/d1/wrangler-commands/)
 
 ## Create the first owner
 
 You do not create or type an owner ID. The setup page generates a unique internal ID automatically. The sign-in username is `owner`.
 
-1. Back up production D1 and apply migration `0015_cloudflare_password_iterations.sql`. Confirm the Pages project has the `DB` binding to `kinguardian-db`.
+1. Back up production D1 and apply pending migrations `0015_cloudflare_password_iterations.sql` and `0016_account_recovery_codes.sql` in order. Apply `0015` before any user exists. Confirm the Pages project has the `DB` binding to `kinguardian-db`.
 2. In Cloudflare, open **Workers & Pages > kinguardian > Settings > Variables and Secrets**. For the **Production** environment, add two encrypted secrets: `OWNER_BOOTSTRAP_SECRET` and `AUTH_RATE_LIMIT_SECRET`. To make each value in PowerShell, run `node -p "require('node:crypto').randomBytes(32).toString('base64url')"` twice and use a different result for each secret. Do not put either value in GitHub or this chat.
 3. Build and manually deploy the updated Pages Functions after the migration is applied.
 4. Open `https://kinguardian.pages.dev/api/auth/bootstrap-status`. Continue when it returns `"setupAvailable": true`.
-5. Open `https://kinguardian.pages.dev/setup.html`. Enter the value of `OWNER_BOOTSTRAP_SECRET` and create the owner account. The page shows a temporary password once. Save it in a password manager.
+5. Open `https://kinguardian.pages.dev/setup.html`. Enter the value of `OWNER_BOOTSTRAP_SECRET` and create the owner account. The page shows a temporary password and ten recovery codes once. Save both privately.
 6. Sign in at `https://kinguardian.pages.dev/login.html` with username `owner` and that temporary password. Change the password when prompted.
 7. After setup succeeds, remove the `OWNER_BOOTSTRAP_SECRET` from Cloudflare. Keep `AUTH_RATE_LIMIT_SECRET`; sign-in and other protected API routes still need it.
 
@@ -99,7 +99,7 @@ npx wrangler d1 migrations create kinguardian-db describe_the_change
 
 Write the SQL in the new file, test it locally, and keep it additive and backward-compatible where possible. To add a column, use `ALTER TABLE ... ADD COLUMN ...` in the new migration, then validate existing and new rows. Do not use `DROP`, destructive rewrites, or data-clearing statements without an explicit data-loss review.
 
-The first fourteen migrations create the prototype tables and add the encrypted international-contact envelope, default-off location consent, encrypted account-sharing keys, recipient-specific encrypted location envelopes, per-device Web Push delivery state, hash-only account setup tokens, and short-lived device-pairing requests. Migration `0015_cloudflare_password_iterations.sql` sets the account-password constraint to 100,000 PBKDF2 rounds, the Cloudflare Workers maximum. It stops if any user already exists. Production migrations `0001`–`0014` are applied; `0015` is pending. Safety check-ins use `safety_checkins` and `safety_checkin_recipients`. The scheduled Worker marks overdue check-ins and creates idempotent events, then makes a bounded push attempt when VAPID and recipient consent are configured. A `provider_accepted` status is not a delivery receipt.
+The first fourteen migrations create the prototype tables and add the encrypted international-contact envelope, default-off location consent, encrypted account-sharing keys, recipient-specific encrypted location envelopes, per-device Web Push delivery state, hash-only account setup tokens, and short-lived device-pairing requests. Migration `0015_cloudflare_password_iterations.sql` sets the account-password constraint to 100,000 PBKDF2 rounds, the Cloudflare Workers maximum. It stops if any user already exists. Migration `0016_account_recovery_codes.sql` adds a hash-only table for one-time password recovery codes. At the last recorded check, production migrations `0001`–`0014` were applied and `0015` was pending. Safety check-ins use `safety_checkins` and `safety_checkin_recipients`. The scheduled Worker marks overdue check-ins and creates idempotent events, then makes a bounded push attempt when VAPID and recipient consent are configured. A `provider_accepted` status is not a delivery receipt.
 
 As checked on 2026-11-05, the Workers Free plan includes 5 million D1 rows read per day, 100,000 rows written per day, and 5 GB total D1 storage. Queries stop working after the daily read/write cap until 00:00 UTC; the free plan does not silently turn an overage into a paid upgrade. The Worker Cron CPU allowance is 10 ms per invocation, so this prototype sends at most one device push per minute. These limits can delay queued notifications. Check the current [D1 pricing and limits](https://developers.cloudflare.com/d1/platform/pricing/) and [Workers limits](https://developers.cloudflare.com/workers/platform/limits/) before relying on a production schedule.
 

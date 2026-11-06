@@ -29,6 +29,17 @@
 .form-message[data-state="success"] { color: var(--forest); }
 .auth-privacy { display: flex; align-items: center; gap: 8px; margin: 23px 0 0; color: var(--ink-muted); font-size: .7rem; }
 .auth-privacy svg { width: 15px; height: 15px; flex: 0 0 auto; }
+.auth-register-prompt { margin: 19px 0 0; color: var(--ink-muted); font-size: .78rem; }
+.auth-register-prompt a { color: var(--forest); font-weight: 750; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.auth-account-links { margin: 7px 0 0; font-size: .74rem; text-align: right; }
+.auth-account-links a { color: var(--forest); font-weight: 700; }
+.auth-field-help { margin: -3px 0 3px; color: var(--ink-muted); font-size: .68rem; line-height: 1.5; }
+.recovery-code-output { display: block; width: 100%; min-height: 190px; margin: 10px 0; border: 1px solid var(--line-strong); border-radius: 11px; padding: 12px; background: var(--paper); color: var(--ink); font: .72rem/1.7 ui-monospace, SFMono-Regular, Consolas, monospace; overflow-wrap: anywhere; resize: vertical; }
+.auth-recovery-result > p:not(.eyebrow) { color: var(--ink-muted); font-size: .75rem; line-height: 1.55; }
+.auth-recovery-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.recovery-complete { margin-top: 18px; border: 1px solid var(--line); border-radius: 12px; padding: 15px; background: var(--surface); }
+.recovery-complete h3 { margin: 0 0 5px; font-size: .95rem; }
+.recovery-complete p { margin: 0; color: var(--ink-muted); font-size: .76rem; line-height: 1.5; }
 .setup-link { display: inline-flex; gap: 7px; margin-top: 17px; color: var(--forest); font-size: .75rem; font-weight: 700; }
 .auth-footer { display: flex; justify-content: space-between; gap: 12px; padding-top: 20px; color: var(--ink-muted); font-size: .68rem; }
 .auth-footer span:first-child { color: var(--ink-soft); font-weight: 700; }

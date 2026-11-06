@@ -1,8 +1,9 @@
 const CACHE_PREFIX = "kinguardian-static-";
-const CACHE_NAME = `${CACHE_PREFIX}v9`;
+const CACHE_NAME = `${CACHE_PREFIX}v10`;
 const STATIC_ASSETS = [
   "./",
   "./index.html",
+  "./app.html",
   "./account-setup.html",
   "./pair-device.html",
   "./contacts.html",
@@ -10,6 +11,7 @@ const STATIC_ASSETS = [
   "./sos.html",
   "./location.html",
   "./manifest.webmanifest",
+  "./css/marketing.css",
   "./css/tokens.css",
   "./css/base.css",
   "./css/auth.css",
@@ -71,7 +73,8 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(fetch(request).catch(async () => {
       const cachedPage = await caches.match(request, { ignoreSearch: true });
       if (cachedPage) return cachedPage;
-      const cachedShell = await caches.match("./index.html");
+      const shell = new URL(request.url).pathname.endsWith("/app.html") ? "./app.html" : "./index.html";
+      const cachedShell = await caches.match(shell);
       return cachedShell || new Response("KinGuardian is offline. Reconnect and retry.", {
         status: 503,
         headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" },
@@ -112,7 +115,7 @@ self.addEventListener("push", (event) => {
       badge: "./assets/icons/kinguardian.svg",
       tag: `kinguardian-${PUSH_COPY[category] ? category : "update"}${notificationId ? `-${notificationId}` : ""}`,
       renotify: false,
-      data: { path: "/" },
+      data: { path: "/app.html" },
     });
   })());
 });
@@ -120,7 +123,7 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   event.waitUntil((async () => {
-    const destination = new URL("/", self.location.origin).href;
+    const destination = new URL("/app.html", self.location.origin).href;
     const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     const existing = windows.find((client) => new URL(client.url).origin === self.location.origin);
     if (existing) {

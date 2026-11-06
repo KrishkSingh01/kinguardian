@@ -20,7 +20,7 @@ npx wrangler d1 migrations apply kinguardian-db --local
 npm run dev
 ```
 
-The Node.js test suite and release check are run after code changes. All fifteen migrations are included in the local schema checks. Start the local preview with `npm run dev`, then open its address in a regular browser; visual QA has not been completed. Wrangler may show placeholder `Request.cf` values in local mode.
+The Node.js test suite and release check are run after code changes. All sixteen migrations are included in local schema checks. Start the local preview with `npm run dev`, then open its address in a regular browser; visual QA has not been completed. Wrangler may show placeholder `Request.cf` values in local mode.
 
 For local owner setup, add strong, unique `OWNER_BOOTSTRAP_SECRET` and `AUTH_RATE_LIMIT_SECRET` values to the ignored root `.dev.vars`. To test push locally, generate VAPID keys with `npm run generate:vapid`, put the public key in root `.dev.vars`, and put the public key, private key, and contact subject in `worker/.dev.vars`. Keep private values on your machine.
 
@@ -37,7 +37,7 @@ npx wrangler login
 npx wrangler d1 migrations list kinguardian-db --remote
 ```
 
-The list command is read-only. Production D1 migrations `0001`–`0014` are applied and `0015_cloudflare_password_iterations.sql` is pending. A read-only production count found zero user rows. Do not apply `0015` after creating an owner account; its guard stops if users exist.
+The list command is read-only. At the last recorded check, production D1 migrations `0001`–`0014` were applied and `0015_cloudflare_password_iterations.sql` was pending. Apply `0015` before any account is created; its guard stops if users exist. Apply `0016_account_recovery_codes.sql` before deploying registration and password recovery. Migration `0016` only adds a table and can be applied after users exist.
 
 The Pages config includes `pages_build_output_dir`, so Wrangler reads that file for the Pages configuration. Both local Wrangler files now match the D1 UUID used in GitHub. See [Cloudflare Pages Wrangler configuration](https://developers.cloudflare.com/pages/functions/wrangler-configuration/).
 
@@ -53,7 +53,7 @@ Apply the pending migration before the Pages code deployment:
 npx wrangler d1 migrations apply kinguardian-db --remote
 ```
 
-Production D1 has migrations `0001`–`0014` applied. Migration `0015_cloudflare_password_iterations.sql` is pending. It safely refuses to run if the `users` table is non-empty; a read-only production count currently shows zero users. Apply it before deploying the matching Pages Functions code.
+At the last recorded check, production D1 had migrations `0001`–`0014` applied and migration `0015_cloudflare_password_iterations.sql` pending. It safely refuses to run if the `users` table is non-empty. Apply `0015` before creating an account, then apply `0016_account_recovery_codes.sql` before deploying the matching Pages Functions code.
 
 ## 4. Configure secrets and bindings
 
@@ -111,7 +111,7 @@ The Worker runs every minute and attempts at most one device push per tick. The 
 
 ## 6. Verify a deployment safely
 
-After an authorized deployment, verify the public app shell and static assets, then check Pages Function health and owner bootstrap status without creating real member accounts until access is restricted. Create the owner once, save the temporary password securely, and change it at first sign-in. Configure member accounts manually through the owner interface.
+After the database migrations and an authorized deployment, verify the public app shell, registration page, recovery page, and Pages Function health. Create the owner once, save the temporary password and recovery codes privately, and change the password at first sign-in. Members can then register themselves and save their own recovery codes. The owner test panel can run read-only service checks and create a safe test SOS; it does not notify contacts.
 
 Use the notification test action to validate a deliberately subscribed test device. Do not use a real SOS as a deployment test. Confirm the UI says “provider accepted” only after a push service returns success; it cannot confirm a device displayed a notification. Do not enter real emergency or sensitive personal information until the security and browser review is complete.
 
@@ -121,15 +121,15 @@ Use the notification test action to validate a deliberately subscribed test devi
 - GitHub has the real D1 UUID in both Wrangler files. This local export has now been updated to match.
 - `npm test`: 32 passed, 0 failed. `npm run check:release`: passed with 45 SHA-256-checked public assets. The build used `development` locally; Cloudflare's project form had `KG_RELEASE_TYPE=production`.
 - Current npm advisory status could not be checked because this environment could not resolve `registry.npmjs.org`. Python-only test scripts could not run because Python is not installed in the available shell.
-- Production D1 migrations `0001`–`0014` are applied; `0015_cloudflare_password_iterations.sql` is pending. A read-only production count found zero user rows. Apply `0015` before deploying the updated Pages Functions code. Owner setup has not been completed.
+- At the last recorded check, production D1 migrations `0001`–`0014` were applied and `0015_cloudflare_password_iterations.sql` was pending. Apply `0015` before creating any account, then apply `0016_account_recovery_codes.sql` before deploying this update. Owner setup was not complete at that check.
 - The bootstrap and rate-limit secrets are configured well enough for the status endpoint to report setup available; their values were not read. Owner setup remains unused. The scheduled Worker, VAPID push, and authenticated API flows remain unverified. No APK exists or has been signed.
 - Visual verification of the public site remains incomplete because the computer-use safety restriction prevented browser automation.
 
 ## Manual production update
 
-Production D1 has migrations `0001`–`0014`; migration `0015_cloudflare_password_iterations.sql` is pending. The current production `users` table is empty. Back up D1 outside the project folder before applying the migration. It refuses to run if any user exists.
+At the last recorded check, production D1 had migrations `0001`–`0014` applied and migration `0015_cloudflare_password_iterations.sql` pending. Migration `0015` refuses to run if any user exists. Back up D1 outside the project folder before applying it. Apply migration `0016_account_recovery_codes.sql` after `0015`.
 
-In PowerShell, run these commands from the main project folder. They apply the database migration, build and check the production files, then publish the Pages project. Do not create the owner until all steps succeed.
+In PowerShell, run these commands from the main project folder. They apply pending database migrations, build and check the production files, then publish the Pages project. Do not create the owner until all steps succeed.
 
 ```powershell
 Set-Location 'C:\Users\krish\Downloads\KinGuardian\kinguardian-source-0.1.0\kinguardian'

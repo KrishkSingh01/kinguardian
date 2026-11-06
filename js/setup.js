@@ -6,6 +6,8 @@ const message = document.querySelector("#setup-message");
 const result = document.querySelector("#credential-result");
 const passwordOutput = document.querySelector("#temporary-password");
 const copyButton = document.querySelector("#copy-password");
+const recoveryOutput = document.querySelector("#owner-recovery-codes");
+const copyRecoveryButton = document.querySelector("#copy-owner-recovery-codes");
 
 try {
   const status = await requestJson("/api/auth/bootstrap-status");
@@ -28,12 +30,24 @@ form.addEventListener("submit", async (event) => {
     document.querySelector("#bootstrap-secret").value = "";
     form.hidden = true;
     passwordOutput.textContent = response.temporaryPassword;
+    recoveryOutput.value = Array.isArray(response.recoveryCodes) ? response.recoveryCodes.join("\n") : "";
     result.hidden = false;
-    showMessage(message, "The owner account was created. Save the temporary password now.", "success");
+    showMessage(message, "The owner account was created. Save the temporary password and recovery codes now.", "success");
   } catch (error) {
     document.querySelector("#bootstrap-secret").value = "";
     showMessage(message, error.message || "Owner setup could not be completed.");
     submit.disabled = false;
+  }
+});
+
+copyRecoveryButton.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(recoveryOutput.value);
+    showMessage(message, "Recovery codes copied. Store them safely; they will not be shown again.", "success");
+  } catch {
+    recoveryOutput.focus();
+    recoveryOutput.select();
+    showMessage(message, "Copy was unavailable. Select the recovery codes and copy them manually.");
   }
 });
 

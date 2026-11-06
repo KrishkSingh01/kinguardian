@@ -4,7 +4,7 @@
   "short_name": "KinGuardian",
   "description": "Stay connected with your trusted circle through consent-based safety tools.",
   "lang": "en",
-  "start_url": "/",
+  "start_url": "/app.html",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",

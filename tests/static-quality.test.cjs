@@ -4,7 +4,7 @@ const path = require("node:path");
 const test = require("node:test");
 
 const root = path.join(__dirname, "..");
-const pages = ["index.html", "login.html", "setup.html", "change-password.html", "account-setup.html", "pair-device.html", "contacts.html", "invite.html", "sos.html", "location.html"];
+const pages = ["index.html", "app.html", "login.html", "register.html", "recover.html", "setup.html", "change-password.html", "account-setup.html", "pair-device.html", "contacts.html", "invite.html", "sos.html", "location.html"];
 const source = (filename) => readFileSync(path.join(root, filename), "utf8");
 
 function attributes(tag) {
@@ -70,6 +70,19 @@ test("static pages have valid local resources, labels, and accessible names", ()
   assert.ok(totalIds > 0);
 });
 
+test("the root is a public homepage and the private app shell has its own page", () => {
+  const homepage = source("index.html");
+  const app = source("app.html");
+  assert.match(homepage, /<main id="main-content"/u);
+  assert.match(homepage, /How it works/u);
+  assert.match(homepage, /Trusted contacts/u);
+  assert.match(homepage, /iamkrishk41@gmail\.com/u);
+  assert.match(homepage, /automatic contact alerts are not currently enabled/iu);
+  assert.doesNotMatch(homepage, /id="app-shell"/u);
+  assert.match(app, /id="app-shell"/u);
+  assert.match(app, /src="js\/app\.js"/u);
+});
+
 test("light and dark themes retain contrast, focus, reduced motion, and mobile rules", () => {
   const tokens = source("css/tokens.css");
   const themes = [
@@ -98,7 +111,7 @@ test("light and dark themes retain contrast, focus, reduced motion, and mobile r
   const responsive = source("css/responsive.css");
   for (const breakpoint of ["max-width: 1160px", "max-width: 850px", "max-width: 680px", "max-width: 390px"]) assert.ok(responsive.includes(breakpoint));
   assert.ok(source("css/notifications.css").includes("max-width: 620px"));
-  const navItems = [...source("index.html").matchAll(/<button\b[^>]*class="nav-item[^>]*>/gu)].map((match) => match[0]);
+  const navItems = [...source("app.html").matchAll(/<button\b[^>]*class="nav-item[^>]*>/gu)].map((match) => match[0]);
   assert.ok(navItems.length > 0 && navItems.every((button) => attributes(button)["aria-label"]));
   const cssBytes = readdirSync(path.join(root, "css")).filter((name) => name.endsWith(".css"))
     .reduce((total, name) => total + statSync(path.join(root, "css", name)).size, 0);

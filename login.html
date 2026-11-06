@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#f3f2ec" />
-    <meta name="description" content="Sign in to your private KinGuardian account." />
+    <meta name="description" content="Sign in to your KinGuardian account or create your own member account." />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/icons/kinguardian.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="css/tokens.css" />
@@ -18,7 +18,7 @@
     <main class="auth-layout">
       <section class="auth-brand-panel" aria-label="KinGuardian">
         <a class="brand" href="index.html" aria-label="KinGuardian home"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 3.5 34 9v10.4c0 8.1-5.7 14-14 17.1-8.3-3.1-14-9-14-17.1V9l14-5.5Z"/><path d="M13.2 20.3c0-3.8 2.6-6.6 6.8-6.6s6.8 2.8 6.8 6.6c0 3.5-2.6 6.2-6.8 9.1-4.2-2.9-6.8-5.6-6.8-9.1Z"/><path d="M16 20h8"/></svg></span><span class="brand-name">kin<span>guardian</span></span></a>
-        <div class="auth-brand-copy"><p class="eyebrow">YOUR SAFETY. YOUR TRUSTED CIRCLE.</p><h1>Stay close<br />to your people.</h1><p>Safety tools that keep your choices in your hands.</p></div>
+        <div class="auth-brand-copy"><p class="eyebrow">YOUR SAFETY. YOUR TRUSTED CIRCLE.</p><h1>Stay close<br />to your people.</h1><p>Create your own account and invite the people you trust.</p></div>
         <div class="auth-ornament" aria-hidden="true"><span class="auth-orbit orbit-1"></span><span class="auth-orbit orbit-2"></span><span class="auth-orbit orbit-3"></span><span class="auth-orbit-core"><svg viewBox="0 0 76 76"><path d="M38 5 65 15v20c0 15.6-11 27-27 33C22 62 11 50.6 11 35V15L38 5Z"/><path d="M26 36c0-6.2 4.5-10.7 12-10.7S50 29.8 50 36c0 5.7-4.5 10-12 14.7C30.5 46 26 41.7 26 36Z"/></svg></span></div>
         <p class="auth-brand-foot">Private by design · Always by choice</p>
       </section>
@@ -26,7 +26,7 @@
         <div class="auth-form-wrap">
           <p class="eyebrow">WELCOME BACK</p>
           <h2 id="form-heading">Sign in to your space.</h2>
-          <p class="auth-subtitle">Use the username and password given to you by your KinGuardian owner.</p>
+          <p class="auth-subtitle">Enter the username and password you chose when you joined.</p>
           <form id="login-form" class="auth-form">
             <label for="username">Username</label>
             <input id="username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required minlength="3" maxlength="40" />
@@ -35,7 +35,9 @@
             <button class="button button-dark auth-submit" id="login-submit" type="submit">Sign in <span aria-hidden="true">→</span></button>
           </form>
           <p class="form-message" id="login-message" role="status" aria-live="polite"></p>
-          <p class="auth-privacy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3m-11 0h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"/></svg> No public registration. Accounts are created by your owner.</p>
+          <p class="auth-account-links"><a href="recover.html">Forgot your password?</a></p>
+          <p class="auth-privacy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3m-11 0h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"/></svg> Your password is private. KinGuardian never shows it to the owner.</p>
+          <p class="auth-register-prompt">New to KinGuardian? <a href="register.html">Create your free account <span aria-hidden="true">→</span></a></p>
           <a class="setup-link" href="pair-device.html">Pair a new device with an existing device <span aria-hidden="true">→</span></a>
           <a class="setup-link" id="setup-link" href="setup.html" hidden>First-time owner setup <span aria-hidden="true">→</span></a>
         </div>

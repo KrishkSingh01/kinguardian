@@ -27,7 +27,7 @@ form.addEventListener("submit", async (event) => {
     const pendingInvite = sessionStorage.getItem("kg-pending-invite");
     const invitationDestination = /^[A-Za-z0-9_-]{43}$/u.test(pendingInvite || "")
       ? `invite.html#${pendingInvite}`
-      : "index.html";
+      : "app.html";
     const destination = response.user.mustChangePassword
       ? "change-password.html"
       : invitationDestination;

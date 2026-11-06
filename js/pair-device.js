@@ -76,7 +76,7 @@ async function pollPairing() {
         polling = false;
         activeToken = "";
         showMessage(message, "Device paired. Opening your KinGuardian account…", "success");
-        window.location.replace("index.html");
+        window.location.replace("app.html");
         return;
       }
     }

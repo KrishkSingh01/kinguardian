@@ -10,6 +10,12 @@ const setupLinkInput = document.querySelector("#account-setup-link");
 const setupExpiry = document.querySelector("#account-setup-expiry");
 const setupQr = document.querySelector("#account-setup-qr");
 const downloadSetupQr = document.querySelector("#download-account-setup-qr");
+const checksButton = document.querySelector("#run-owner-checks");
+const sosTestButton = document.querySelector("#run-sos-test");
+const closeSosTestButton = document.querySelector("#close-sos-test");
+const testMessage = document.querySelector("#owner-test-message");
+const testResults = document.querySelector("#owner-test-results");
+let openTestAlertId = null;
 
 if (manager) {
   initializeOwnerTools();
@@ -28,8 +34,123 @@ async function initializeOwnerTools() {
   createButton.addEventListener("click", createMember);
   document.querySelector("#refresh-members").addEventListener("click", loadMembers);
   document.querySelector("#copy-account-setup-link").addEventListener("click", copySetupLink);
+  checksButton.addEventListener("click", runOwnerChecks);
+  sosTestButton.addEventListener("click", createSafeSosTest);
+  closeSosTestButton.addEventListener("click", closeSafeSosTest);
   accountList.addEventListener("click", handleAccountAction);
-  await loadMembers();
+  await Promise.all([loadMembers(), restoreOpenTestAlert()]);
+}
+
+async function runOwnerChecks() {
+  checksButton.disabled = true;
+  testResults.replaceChildren();
+  showMessage(testMessage, "Checking account and safety services…", "busy");
+  const checks = [
+    ["Owner session", async () => {
+      const { user } = await requestJson("/api/auth/me");
+      if (user.role !== "owner") throw new Error("Owner access is not active.");
+      return "Signed in as owner";
+    }],
+    ["Member accounts", async () => {
+      const { users } = await requestJson("/api/owner/users");
+      return `${users.filter((user) => user.role === "member").length} member account(s)`;
+    }],
+    ["Trusted circle", async () => {
+      const { connections } = await requestJson("/api/connections");
+      return `${connections.length} connection(s)`;
+    }],
+    ["Check-ins", async () => {
+      const { checkins } = await requestJson("/api/checkins");
+      return `${checkins.length} check-in(s)`;
+    }],
+    ["SOS service", async () => {
+      const { alerts } = await requestJson("/api/sos");
+      return `${alerts.length} alert(s) in your history`;
+    }],
+    ["Notification setup", async () => {
+      const settings = await requestJson("/api/notifications");
+      return settings.pushAvailable
+        ? `Configured · ${settings.activeDeviceCount} device(s)`
+        : "Not configured yet · no message sent";
+    }],
+  ];
+
+  const outcomes = await Promise.all(checks.map(async ([label, check]) => {
+    try {
+      return { label, detail: await check(), state: "passed" };
+    } catch (error) {
+      return { label, detail: error.message || "Could not check this service.", state: "failed" };
+    }
+  }));
+  testResults.replaceChildren(...outcomes.map(renderTestResult));
+  const failures = outcomes.filter((item) => item.state === "failed").length;
+  showMessage(testMessage, failures
+    ? `${outcomes.length - failures} of ${outcomes.length} checks passed. Review the results above.`
+    : "All read-only checks passed. No messages or alerts were sent.", failures ? "error" : "success");
+  checksButton.disabled = false;
+}
+
+async function createSafeSosTest() {
+  sosTestButton.disabled = true;
+  showMessage(testMessage, "Creating a test alert for your account only…", "busy");
+  try {
+    const result = await requestJson("/api/sos", {
+      method: "POST",
+      body: {
+        testMode: true,
+        clientAlertId: crypto.randomUUID(),
+        senderTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Etc/UTC",
+        trustedUserIds: [],
+        externalContactIds: [],
+      },
+    });
+    openTestAlertId = result.alert.alertId;
+    closeSosTestButton.hidden = false;
+    showMessage(testMessage, "Safe test SOS created. It has no recipients and no notifications were sent.", "success");
+  } catch (error) {
+    sosTestButton.disabled = false;
+    showMessage(testMessage, error.message || "The safe SOS test could not be created.");
+  }
+}
+
+async function restoreOpenTestAlert() {
+  try {
+    const { alerts } = await requestJson("/api/sos");
+    const alert = alerts.find((item) => item.isSender && item.testMode && !["resolved", "closed"].includes(item.status));
+    if (!alert) return;
+    openTestAlertId = alert.alertId;
+    sosTestButton.disabled = true;
+    closeSosTestButton.hidden = false;
+    showMessage(testMessage, "You have an open test SOS. Resolve and close it here when finished.");
+  } catch {
+    // The main sign-in check and owner-only access remain the source of truth.
+  }
+}
+
+async function closeSafeSosTest() {
+  if (!openTestAlertId) return;
+  closeSosTestButton.disabled = true;
+  showMessage(testMessage, "Closing your test alert…", "busy");
+  try {
+    const alertPath = `/api/sos/${encodeURIComponent(openTestAlertId)}`;
+    await requestJson(`${alertPath}/resolve`, { method: "POST", body: {} });
+    await requestJson(`${alertPath}/close`, { method: "POST", body: {} });
+    openTestAlertId = null;
+    sosTestButton.disabled = false;
+    closeSosTestButton.hidden = true;
+    showMessage(testMessage, "Test SOS resolved and closed. No notifications were sent.", "success");
+  } catch (error) {
+    showMessage(testMessage, error.message || "The test alert could not be closed.");
+  } finally {
+    closeSosTestButton.disabled = false;
+  }
+}
+
+function renderTestResult({ label, detail, state }) {
+  const row = document.createElement("li");
+  row.dataset.state = state;
+  row.textContent = `${label}: ${detail}`;
+  return row;
 }
 
 async function loadMembers() {

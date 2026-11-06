@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en" data-theme="system">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f3f2ec" />
+    <meta name="description" content="Reset a KinGuardian password with a one-time recovery code." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/icons/kinguardian.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="css/tokens.css" />
+    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/auth.css" />
+    <script type="module" src="js/recover.js"></script>
+    <title>Reset password · KinGuardian</title>
+  </head>
+  <body class="auth-page">
+    <a class="skip-link" href="#recover-form">Skip to password recovery</a>
+    <main class="auth-layout">
+      <section class="auth-brand-panel" aria-label="KinGuardian">
+        <a class="brand" href="index.html" aria-label="KinGuardian home"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 3.5 34 9v10.4c0 8.1-5.7 14-14 17.1-8.3-3.1-14-9-14-17.1V9l14-5.5Z"/><path d="M13.2 20.3c0-3.8 2.6-6.6 6.8-6.6s6.8 2.8 6.8 6.6c0 3.5-2.6 6.2-6.8 9.1-4.2-2.9-6.8-5.6-6.8-9.1Z"/><path d="M16 20h8"/></svg></span><span class="brand-name">kin<span>guardian</span></span></a>
+        <div class="auth-brand-copy"><p class="eyebrow">ACCOUNT RECOVERY</p><h1>Back to your<br />trusted circle.</h1><p>Use one recovery code you saved when you joined.</p></div>
+        <div class="auth-ornament" aria-hidden="true"><span class="auth-orbit orbit-1"></span><span class="auth-orbit orbit-2"></span><span class="auth-orbit orbit-3"></span><span class="auth-orbit-core"><svg viewBox="0 0 76 76"><path d="M38 5 65 15v20c0 15.6-11 27-27 33C22 62 11 50.6 11 35V15L38 5Z"/><path d="M26 36c0-6.2 4.5-10.7 12-10.7S50 29.8 50 36c0 5.7-4.5 10-12 14.7C30.5 46 26 41.7 26 36Z"/></svg></span></div>
+        <p class="auth-brand-foot">Private by design · Always by choice</p>
+      </section>
+      <section class="auth-form-panel" aria-labelledby="form-heading">
+        <div class="auth-form-wrap">
+          <p class="eyebrow">RESET YOUR PASSWORD</p>
+          <h2 id="form-heading">Use a recovery code.</h2>
+          <p class="auth-subtitle">Enter your username, one unused recovery code, and a new password. This will sign you out of other devices.</p>
+          <form id="recover-form" class="auth-form">
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" required minlength="3" maxlength="40" />
+            <label for="recovery-code">One-time recovery code</label>
+            <input id="recovery-code" name="recoveryCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" required minlength="32" maxlength="39" />
+            <label for="new-password">New password</label>
+            <input id="new-password" name="password" type="password" autocomplete="new-password" required minlength="12" maxlength="256" />
+            <label for="confirm-password">Confirm new password</label>
+            <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" required minlength="12" maxlength="256" />
+            <button class="button button-dark auth-submit" id="recover-submit" type="submit">Reset password <span aria-hidden="true">→</span></button>
+          </form>
+          <p class="form-message" id="recover-message" role="status" aria-live="polite"></p>
+          <section id="recover-complete" class="recovery-complete" hidden>
+            <h3>Password changed.</h3>
+            <p>Sign in with your new password. The recovery code you used cannot be used again.</p>
+          </section>
+          <a class="setup-link" href="login.html">Return to sign in <span aria-hidden="true">→</span></a>
+          <p class="auth-field-help">No recovery code? Ask the owner to issue you a one-time password reset link.</p>
+        </div>
+        <footer class="auth-footer"><span>KinGuardian</span><span>Your safety. Your trusted circle.</span></footer>
+      </section>
+    </main>
+  </body>
+</html>

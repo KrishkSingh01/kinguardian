@@ -12,12 +12,12 @@ if (!new Set(["development", "preview", "production"]).has(releaseType)) {
   throw new Error("KG_RELEASE_TYPE must be development, preview, or production.");
 }
 const staticFiles = [
-  "index.html", "login.html", "setup.html", "change-password.html", "account-setup.html", "pair-device.html", "contacts.html", "invite.html", "sos.html", "location.html",
+  "index.html", "app.html", "login.html", "register.html", "recover.html", "setup.html", "change-password.html", "account-setup.html", "pair-device.html", "contacts.html", "invite.html", "sos.html", "location.html",
   "manifest.webmanifest", "service-worker.js", "_headers", "_routes.json",
 ];
 const staticDirectories = ["css", "assets"];
 const entryPoints = [
-  "app", "owner", "login", "setup", "change-password", "account-setup", "pair-device", "contacts", "circle", "checkins", "invite", "sos", "location",
+  "app", "owner", "login", "register", "recover", "recovery-codes", "setup", "change-password", "account-setup", "pair-device", "contacts", "circle", "checkins", "invite", "sos", "location",
   "notifications",
 ].map((name) => path.join(projectRoot, "js", `${name}.js`));
 

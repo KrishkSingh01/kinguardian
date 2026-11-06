@@ -20,7 +20,7 @@
       <section class="auth-single-card" aria-labelledby="setup-heading">
         <p class="eyebrow">ONE-TIME OWNER SETUP</p>
         <h1 id="setup-heading">Create the owner account.</h1>
-        <p class="auth-subtitle">This setup is only available once. Enter the one-time secret you configured outside the app. KinGuardian will generate a temporary password that you must change at first sign-in.</p>
+          <p class="auth-subtitle">This setup is only available once. Enter the one-time secret you configured outside the app. KinGuardian will generate a temporary password and private recovery codes.</p>
         <form id="setup-form" class="auth-form">
           <label for="bootstrap-secret">One-time setup secret</label>
           <input id="bootstrap-secret" name="bootstrap-secret" type="password" autocomplete="off" required minlength="32" maxlength="512" />
@@ -31,6 +31,10 @@
           <p class="eyebrow">SHOWN ONCE</p><h2 id="credential-heading">Save this temporary password.</h2>
           <p class="auth-subtitle">The owner username is <strong>owner</strong>. Copy the password to a password manager, then continue to sign in and change it.</p>
           <div class="credential-box"><code id="temporary-password"></code><button class="button button-outline" id="copy-password" type="button">Copy</button></div>
+          <label for="owner-recovery-codes">One-time owner recovery codes — save them privately</label>
+          <textarea class="recovery-code-output" id="owner-recovery-codes" readonly rows="10" spellcheck="false"></textarea>
+          <button class="button button-outline" id="copy-owner-recovery-codes" type="button">Copy recovery codes</button>
+          <p class="auth-field-help">Each code can reset the owner password once. KinGuardian cannot show this set again.</p>
           <a class="button button-dark auth-submit" href="login.html">Continue to sign in <span aria-hidden="true">→</span></a>
         </section>
         <p class="auth-privacy"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3m-11 0h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"/></svg> No default credentials. The setup secret is never stored in D1.</p>

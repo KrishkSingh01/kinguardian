@@ -18,7 +18,7 @@ const prohibitedExtensions = new Set([
 ]);
 const expectedTopLevelFiles = new Set([
   "_headers", "_routes.json", "account-setup.html", "change-password.html",
-  "contacts.html", "index.html", "invite.html", "location.html", "login.html",
+  "contacts.html", "index.html", "app.html", "invite.html", "location.html", "login.html", "register.html", "recover.html",
   "manifest.webmanifest", "pair-device.html", "release-manifest.json",
   "service-worker.js", "setup.html", "sos.html",
 ]);

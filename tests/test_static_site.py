@@ -7,7 +7,7 @@ import tomllib
 
 
 ROOT = Path(__file__).resolve().parents[1]
-HTML_FILES = ("index.html", "login.html", "setup.html", "change-password.html", "account-setup.html", "pair-device.html", "contacts.html", "invite.html", "sos.html", "location.html")
+HTML_FILES = ("index.html", "app.html", "login.html", "register.html", "recover.html", "setup.html", "change-password.html", "account-setup.html", "pair-device.html", "contacts.html", "invite.html", "sos.html", "location.html")
 
 
 class PageInspector(HTMLParser):
@@ -117,6 +117,9 @@ def main() -> None:
     manifest = json.loads((ROOT / "manifest.webmanifest").read_text(encoding="utf-8"))
     for icon in manifest["icons"]:
         check_local_reference(ROOT / "index.html", icon["src"])
+    manifest_start = manifest["start_url"]
+    if manifest_start != "/app.html":
+        raise AssertionError("The installed app should open its authenticated app page")
     routes = json.loads((ROOT / "_routes.json").read_text(encoding="utf-8"))
     if routes != {"version": 1, "include": ["/api/*"], "exclude": []}:
         raise AssertionError("Pages Functions must be limited to /api/* routes")

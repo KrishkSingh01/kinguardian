@@ -77,6 +77,7 @@ def main() -> None:
         "notification_events", "notification_deliveries", "encryption_metadata", "recovery_codes",
         "communication_attempts", "user_sharing_keys", "encrypted_location_envelopes",
         "account_setup_tokens", "device_pairing_requests",
+        "account_recovery_codes",
     }
     missing = expected - tables
     if missing:

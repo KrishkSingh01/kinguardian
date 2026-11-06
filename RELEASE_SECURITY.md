@@ -97,7 +97,7 @@ Configure secrets through Cloudflare’s secret settings, never in GitHub or TOM
 
 Confirm the Pages `DB` binding points to this database. Check the production environment and keep production secrets separate from preview secrets. Never place the VAPID private key in Pages, GitHub variables, or browser assets.
 
-Before applying production migrations, review all migration files, confirm the intended account/project/database, and make a backup. Production D1 migrations `0001`–`0014` are applied; `0015_cloudflare_password_iterations.sql` is pending. A read-only count found zero user rows, and owner setup remains unused. The Cloudflare Pages deployment exists; the matching password-hash code has not yet been manually deployed.
+Before applying production migrations, review all migration files, confirm the intended account/project/database, and make a backup. At the last recorded check, production D1 migrations `0001`–`0014` were applied and `0015_cloudflare_password_iterations.sql` was pending. Apply `0015` before any account is created, then apply `0016_account_recovery_codes.sql`. Migration `0016` only adds the hash-only recovery-code table. This update has not been deployed.
 
 References: [Cloudflare Pages Git integration](https://developers.cloudflare.com/pages/configuration/git-integration/), [build settings](https://developers.cloudflare.com/pages/configuration/build-configuration/), [D1 bindings](https://developers.cloudflare.com/pages/functions/bindings/), and [Pages Wrangler configuration](https://developers.cloudflare.com/pages/functions/wrangler-configuration/).
 
@@ -109,12 +109,12 @@ References: [Cloudflare Pages Git integration](https://developers.cloudflare.com
 - `npm run check:release`: passed for KinGuardian `0.1.0` (`development`); all 45 public assets matched their recorded SHA-256 checksums. The build output did not include server source, known credential patterns, or prohibited private/executable file types.
 - Source inspection found no dynamic code evaluation (`eval`, `new Function`), HTML string injection APIs (`innerHTML`, `outerHTML`, `insertAdjacentHTML`), remote script tags, file-upload inputs, or iframes in the reviewed app source. This is a scoped source check, not a penetration test.
 - No APK, Android permissions, or signing keys exist in the project, so APK signature, installation, update, and Play Protect checks are not applicable yet.
-- The local D1 emulator can apply migrations `0001`–`0015`. The remote D1 database and Pages deployment exist; remote migrations `0001`–`0014` are applied and `0015` is pending.
+- The local D1 emulator can apply migrations `0001`–`0016`. At the last recorded check, remote migrations `0001`–`0014` were applied and `0015` was pending; `0016` is new.
 - The site has not received a visual or authenticated browser check; PWA install/update and public HTTPS behavior remain unverified.
 
 ## Remaining steps
 
-1. Back up production D1, then apply `0015_cloudflare_password_iterations.sql` with `npx wrangler d1 migrations apply kinguardian-db --remote`. The migration aborts if `users` has any rows.
+1. Back up production D1, then apply pending migrations with `npx wrangler d1 migrations apply kinguardian-db --remote`. Migration `0015` aborts if `users` has any rows; migration `0016` only creates the recovery-code table.
 2. Build and manually deploy the updated Pages Functions code. Keep the existing production `DB` binding and secrets in Cloudflare.
 3. Open `/api/auth/bootstrap-status`. When `setupAvailable` is `true`, follow [the owner setup steps](DATABASE_GUIDE.md#create-the-first-owner). The internal owner ID is generated automatically; username is `owner`.
 4. Visually inspect the public site and test authenticated flows with non-sensitive test data before inviting anyone. Do not use a real SOS as a test.

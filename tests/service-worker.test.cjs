@@ -60,8 +60,10 @@ test("service worker caches only the static shell and bypasses APIs", async () =
   let pending;
   worker.handlers.install({ waitUntil: (promise) => { pending = promise; } });
   await pending;
-  assert.equal(worker.installed.length, 38);
+  assert.equal(worker.installed.length, 40);
   assert.ok(worker.installed.includes("./account-setup.html"));
+  assert.ok(worker.installed.includes("./app.html"));
+  assert.ok(worker.installed.includes("./css/marketing.css"));
   assert.ok(worker.installed.includes("./pair-device.html"));
   assert.ok(worker.installed.includes("./css/pair-device.css"));
   assert.ok(worker.installed.includes("./js/account-setup.js"));
@@ -137,7 +139,7 @@ test("push copy is generic and notification clicks stay on the app origin", asyn
   await pending;
   assert.equal(worker.shownNotifications[0].title, "KinGuardian");
   assert.equal(worker.shownNotifications[0].options.body, "A trusted circle member needs your attention.");
-  assert.equal(worker.shownNotifications[0].options.data.path, "/");
+  assert.equal(worker.shownNotifications[0].options.data.path, "/app.html");
   assert.doesNotMatch(worker.shownNotifications[0].options.body, /12\.34|56\.78/u);
 
   worker.handlers.notificationclick({
@@ -145,5 +147,5 @@ test("push copy is generic and notification clicks stay on the app origin", asyn
     waitUntil: (promise) => { pending = promise; },
   });
   await pending;
-  assert.deepEqual(worker.openedWindows, ["https://kin.test/"]);
+  assert.deepEqual(worker.openedWindows, ["https://kin.test/app.html"]);
 });
