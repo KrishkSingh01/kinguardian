@@ -1,0 +1,33 @@
+{
+  "expo": {
+    "name": "KinGuardian",
+    "slug": "kinguardian-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "scheme": "kinguardian",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "dev.kinguardian.app",
+      "config": { "usesNonExemptEncryption": false }
+    },
+    "android": {
+      "package": "dev.kinguardian.app",
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "POST_NOTIFICATIONS"]
+    },
+    "plugins": [
+      ["expo-secure-store", { "configureAndroidBackup": true }],
+      ["expo-sqlite", { "useSQLCipher": true }],
+      ["expo-location", {
+        "locationWhenInUsePermission": "KinGuardian uses location only when you choose a safety action that needs it."
+      }],
+      ["expo-notifications", { "defaultChannel": "safety-alerts" }],
+      "@maplibre/maplibre-react-native"
+    ],
+    "extra": {
+      "apiBaseUrl": "https://kinguardian.pages.dev",
+      "eas": { "projectId": "" }
+    }
+  }
+}
