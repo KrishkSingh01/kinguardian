@@ -58,6 +58,12 @@ export async function readJsonRequest(request, maximumBytes = 16_384) {
 }
 
 export function requireSameOrigin(request) {
+  // Native clients cannot send a browser Origin header. Their cross-origin
+  // requests carry an explicit marker; protected routes still require the
+  // normal bearer session in requireSession(), and browsers cannot add this
+  // non-simple header without a successful CORS preflight (which this API does
+  // not grant). Login and registration remain protected by Turnstile/rate limits.
+  if (request.headers.get("x-kg-client") === "native") return true;
   const origin = request.headers.get("origin");
   let requestOrigin;
   try {

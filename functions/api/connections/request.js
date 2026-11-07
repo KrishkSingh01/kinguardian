@@ -32,7 +32,7 @@ export async function onRequestPost(context) {
     }
     const now = Date.now();
     const connectionId = old?.connection_id || crypto.randomUUID();
-    await context.env.DB.batch([
+    const results = await context.env.DB.batch([
       context.env.DB.prepare(`INSERT INTO trusted_connections (
         connection_id, user_low_id, user_high_id, connection_status, requested_by_user_id, created_at
       ) VALUES (?, ?, ?, 'pending', ?, ?)
@@ -49,6 +49,20 @@ export async function onRequestPost(context) {
         AND requested_by_user_id = ?
       ON CONFLICT (event_key) DO NOTHING`).bind(session.user.user_id, now, now, connectionId, session.user.user_id),
     ]);
+    if (results[0]?.meta?.changes !== 1) {
+      const current = await context.env.DB.prepare(`SELECT connection_status, requested_by_user_id
+        FROM trusted_connections WHERE user_low_id = ? AND user_high_id = ?`).bind(lowId, highId).first();
+      if (current?.connection_status === "accepted") {
+        return jsonResponse({ requestSent: false, message: "You are already trusted people." });
+      }
+      if (current?.connection_status === "pending") {
+        const message = current.requested_by_user_id === session.user.user_id
+          ? "Your request is waiting for their answer."
+          : "This person has already sent you a request. Open Requests to answer it.";
+        return jsonResponse({ requestSent: false, message });
+      }
+      return jsonResponse({ error: { code: "REQUEST_NOT_CREATED", message: "The request was not saved. Refresh your trusted people and try again." } }, 409);
+    }
     return jsonResponse({ requestSent: true, message: "Request sent. They must accept before you share alerts or location." }, 201);
   } catch (error) {
     return safeError(error);

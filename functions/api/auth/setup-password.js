@@ -56,13 +56,23 @@ export async function onRequestPost(context) {
           AND EXISTS (SELECT 1 FROM account_setup_tokens WHERE token_id = ? AND redeemed_at = ?)
       `).bind(PASSWORD_ITERATIONS, passwordHash, salt, now, now, setup.user_id, setup.token_id, now),
       env.DB.prepare(`
+        UPDATE mobile_refresh_tokens SET revoked_at = ?
+        WHERE user_id = ? AND revoked_at IS NULL
+          AND EXISTS (SELECT 1 FROM users WHERE user_id = ? AND password_changed_at = ? AND password_hash = ?)
+      `).bind(now, user.user_id, user.user_id, now, passwordHash),
+      env.DB.prepare(`
         UPDATE account_setup_tokens SET revoked_at = ?
         WHERE user_id = ? AND token_id <> ? AND redeemed_at IS NULL AND revoked_at IS NULL
           AND changes() = 1
       `).bind(now, setup.user_id, setup.token_id),
-      env.DB.prepare(
-        "UPDATE sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL AND changes() = 1",
-      ).bind(now, setup.user_id),
+      env.DB.prepare(`
+        UPDATE sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL
+          AND EXISTS (SELECT 1 FROM users WHERE user_id = ? AND password_changed_at = ? AND password_hash = ?)
+      `).bind(now, setup.user_id, setup.user_id, now, passwordHash),
+      env.DB.prepare(`
+        UPDATE mobile_refresh_tokens SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL
+          AND EXISTS (SELECT 1 FROM users WHERE user_id = ? AND password_changed_at = ? AND password_hash = ?)
+      `).bind(now, setup.user_id, setup.user_id, now, passwordHash),
     ]);
     if (!results[0].meta?.changes || !results[1].meta?.changes) {
       return jsonResponse({ error: { code: "SETUP_LINK_UNAVAILABLE", message: "This setup link is invalid, expired, or already used." } }, 404);

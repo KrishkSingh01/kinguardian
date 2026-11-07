@@ -50,7 +50,13 @@
         <section class="location-map-card" aria-labelledby="location-map-heading">
           <div class="location-section-heading"><div><p class="eyebrow">INTERACTIVE MAP</p><h2 id="location-map-heading">Your safety map</h2></div><span id="map-state" class="map-state" role="status" aria-live="polite">Loading map…</span></div>
           <p id="location-map-copy">The map starts without your location. Choose “Show my location” to place it here. The map provider can see which map area your browser loads.</p>
-          <div id="safety-map" class="safety-map" role="application" aria-label="Interactive map with 3D buildings"></div>
+          <div class="safety-map-frame">
+            <div id="safety-map" class="safety-map" role="application" aria-label="Interactive map with 3D buildings"></div>
+            <div id="map-feedback" class="map-feedback" hidden>
+              <p id="map-feedback-text">Loading map…</p>
+              <button class="button button-outline" id="map-retry" type="button" hidden>Retry map</button>
+            </div>
+          </div>
           <div class="map-actions" aria-label="Map controls">
             <button class="button button-outline" id="map-locate" type="button">Show my location</button>
             <button class="button button-outline" id="map-tilt" type="button" aria-pressed="false">Turn on 3D view</button>

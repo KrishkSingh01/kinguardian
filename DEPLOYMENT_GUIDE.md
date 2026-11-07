@@ -8,7 +8,7 @@ The changes in this folder have not been deployed. A public Turnstile status che
 
 1. Review the files in this folder and keep the `.gitignore` rules.
 2. Check the current D1 migration list and make a private backup using [DATABASE_GUIDE.md](DATABASE_GUIDE.md).
-3. Confirm every required migration is applied before publishing the matching Functions code. This source includes migrations `0018`–`0021` beyond the migration `0017` shown in the user's screenshot.
+3. Confirm every required migration is applied before publishing the matching Functions code. The current source includes migrations through `0022_mobile_sessions.sql`. From the project root, `wrangler d1 migrations list kinguardian-db --remote` shows what is still pending. `wrangler d1 migrations apply kinguardian-db --remote` applies all pending files from this checkout in order, so check the list and keep a private backup first.
 4. Upload the intended source to the existing GitHub repository. Do not upload local secrets, dependency folders, backups, Wrangler state, or generated files. See [RELEASE_SECURITY.md](RELEASE_SECURITY.md).
 5. Wait for the GitHub commit to finish before checking Cloudflare Pages.
 

@@ -115,10 +115,13 @@
                   <span class="hero-kicker"><span class="hero-kicker-dot"></span> YOUR CIRCLE, WITHIN REACH</span>
                   <h2 id="home-heading">Safety feels better<br />when <em>we’re together.</em></h2>
                   <p>Stay connected with people you trust. Start a Safe Journey or call for help when you need it.</p>
-                  <button class="sos-button" type="button" data-action="sos-preview">
-                    <span class="sos-symbol" aria-hidden="true">SOS</span>
-                    <span class="sos-copy"><strong>Emergency SOS</strong><small>Start a 10-second countdown. Cancel any time before it ends.</small></span>
-                  </button>
+                  <div class="home-safety-actions">
+                    <button class="sos-button" type="button" data-action="sos-preview">
+                      <span class="sos-symbol" aria-hidden="true">SOS</span>
+                      <span class="sos-copy"><strong>Emergency SOS</strong><small>Start a 10-second countdown. Cancel any time before it ends.</small></span>
+                    </button>
+                    <button class="button button-outline sos-settings-shortcut" type="button" data-nav="settings">SOS settings</button>
+                  </div>
                   <p class="hero-footnote"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10V7a5 5 0 0 1 10 0v3m-11 0h12a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z"/></svg> A countdown gives you time to cancel.</p>
                 </div>
                 <div class="hero-art" aria-hidden="true">
@@ -188,9 +191,14 @@
               <p class="circle-empty-note" id="connection-empty">No KinGuardian connections yet.</p>
             </section>
             <section class="circle-management" data-auth-only hidden aria-labelledby="requests-title">
-              <div class="circle-management-heading"><div><p class="eyebrow">YOU CHOOSE</p><h3 id="requests-title">Requests</h3></div><button class="text-link" id="refresh-invitations" type="button">Refresh</button></div>
-              <p>Accept requests only from people you know.</p>
+              <div class="circle-management-heading"><div><p class="eyebrow">YOU CHOOSE</p><h3 id="requests-title">Incoming requests</h3></div><button class="text-link" id="refresh-invitations" type="button">Refresh</button></div>
+              <p>Accept requests only from people you know. Each request comes from a KinGuardian account.</p>
               <ul class="invitation-list" id="invitation-list"></ul>
+              <p class="circle-empty-note" id="incoming-requests-empty">No incoming requests.</p>
+              <div class="request-status-sections">
+                <section aria-labelledby="sent-requests-title"><h4 id="sent-requests-title">Requests you sent</h4><ul class="invitation-list" id="sent-request-list"></ul><p class="circle-empty-note" id="sent-requests-empty">No requests waiting for a reply.</p></section>
+                <section aria-labelledby="recent-replies-title"><h4 id="recent-replies-title">Recent answers</h4><ul class="invitation-list" id="recent-replies-list"></ul><p class="circle-empty-note" id="recent-replies-empty">No recent answers.</p></section>
+              </div>
               <p class="form-message" id="circle-message" role="status" aria-live="polite"></p>
             </section>
           </section>
@@ -230,6 +238,7 @@
           <section class="page-view" data-view="settings" aria-labelledby="settings-heading" hidden>
             <div><p class="eyebrow">YOUR ACCOUNT, YOUR CHOICES</p><h2 id="settings-heading">Settings</h2><p class="page-intro">Make KinGuardian feel like yours.</p></div>
             <div class="settings-grid">
+              <article class="settings-card settings-info" data-auth-only hidden><div class="settings-card-heading"><span class="choice-icon choice-device" aria-hidden="true">SOS</span><div><p class="eyebrow">EMERGENCY PREFERENCES</p><h3>SOS settings</h3></div></div><p>Choose trusted people in the SOS flow each time. Their alert preferences are managed in your Trusted Circle. A ten-second cancel timer helps prevent mistakes; an internet or service failure is always shown.</p><div class="settings-actions"><button class="button button-outline" type="button" data-nav="circle">Manage trusted people</button><a class="button button-outline" href="sos.html">Open SOS settings</a></div></article>
               <article class="settings-card settings-info" data-auth-only hidden><div class="settings-card-heading"><span class="choice-icon choice-device" aria-hidden="true">⌁</span><div><p class="eyebrow">ACCOUNT SECURITY</p><h3>Pair another device</h3></div></div><p>Approve a short-lived sign-in request only when you have started it on a device you control.</p><a class="button button-outline" href="pair-device.html">Review a pairing request</a></article>
               <article class="settings-card"><div class="settings-card-heading"><span class="choice-icon choice-theme"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9c0-1.1-.9-2-2-2h-1.5A1.5 1.5 0 0 1 16 8.5v-.7A4.8 4.8 0 0 0 12 3Z"/><circle cx="7.5" cy="12" r="1"/><circle cx="10" cy="7.5" r="1"/><circle cx="15" cy="7" r="1"/></svg></span><div><p class="eyebrow">APPEARANCE</p><h3>Choose your theme</h3></div></div><p>Use your device setting, or pick a look that feels comfortable.</p><label class="field-label" for="theme-select">Colour theme</label><select id="theme-select" class="select-control"><option value="system">Use device setting</option><option value="light">Light</option><option value="dark">Dark</option></select></article>
               <article class="settings-card notification-settings" id="notification-settings" data-auth-only hidden>

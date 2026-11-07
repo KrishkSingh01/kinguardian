@@ -5,7 +5,7 @@ export async function onRequestGet(context) {
   try {
     const session = await requireSession(context);
     if (session.response) return session.response;
-    const [result, incoming, outgoing] = await Promise.all([
+    const [result, incoming, outgoing, recentReplies] = await Promise.all([
       context.env.DB.prepare(`
       SELECT c.connection_id, c.connection_status, c.created_at, c.accepted_at,
              CASE WHEN c.user_low_id = ? THEN high_user.username ELSE low_user.username END AS username,
@@ -35,6 +35,14 @@ export async function onRequestGet(context) {
           AND other.account_status = 'active'
         WHERE c.connection_status = 'pending' AND c.requested_by_user_id = ?
         ORDER BY c.created_at DESC LIMIT 50`).bind(session.user.user_id, session.user.user_id).all(),
+      context.env.DB.prepare(`SELECT c.connection_id, c.connection_status, c.created_at, c.ended_at,
+          c.accepted_at, other.username
+        FROM trusted_connections AS c
+        JOIN users AS other ON other.user_id = CASE WHEN c.user_low_id = ? THEN c.user_high_id ELSE c.user_low_id END
+          AND other.account_status = 'active'
+        WHERE c.requested_by_user_id = ? AND c.connection_status IN ('accepted', 'rejected')
+        ORDER BY COALESCE(c.ended_at, c.accepted_at, c.created_at) DESC LIMIT 20`)
+        .bind(session.user.user_id, session.user.user_id).all(),
     ]);
     return jsonResponse({ connections: (result.results || []).map((row) => ({
       connectionId: row.connection_id,
@@ -49,6 +57,13 @@ export async function onRequestGet(context) {
     })),
     requests: (incoming.results || []).map((row) => ({ connectionId: row.connection_id, username: row.username, createdAt: row.created_at })),
     sentRequests: (outgoing.results || []).map((row) => ({ connectionId: row.connection_id, username: row.username, createdAt: row.created_at })),
+    recentReplies: (recentReplies.results || []).map((row) => ({
+      connectionId: row.connection_id,
+      username: row.username,
+      status: row.connection_status,
+      createdAt: row.created_at,
+      answeredAt: row.ended_at || row.accepted_at || row.created_at,
+    })),
     });
   } catch (error) {
     return safeError(error);
