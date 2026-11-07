@@ -2,7 +2,7 @@
 
 **Your safety. Your trusted circle.**
 
-KinGuardian is a free website/PWA and a separate React Native app source for Android and iOS. The website uses Cloudflare Pages, Pages Functions, Workers, and D1. No paid service or automatic SMS/email provider is configured.
+KinGuardian is a free website and installable Progressive Web App (PWA) prototype. It uses Cloudflare Pages, Pages Functions, Workers, and D1. There is no paid service or automatic SMS/email provider in the project.
 
 > **Please read:** KinGuardian is not an emergency service. It does not call emergency services. SOS and push alerts are best effort and have not been verified in a live production test. In immediate danger, call your local emergency number directly.
 
@@ -16,15 +16,14 @@ KinGuardian is a free website/PWA and a separate React Native app source for And
 - An interactive OpenFreeMap/OpenStreetMap map, with 3D buildings where map data supports them. Map tiles need internet and the map provider can see the area your browser requests.
 - A static emergency information page. India’s nationwide number 112 is included; the site does not guess numbers for other countries.
 - A small offline app shell and browser-local encrypted snapshots. Offline SOS records wait on the device until they can sync. Offline use does not notify anyone.
-- A separate native app in `mobile/` for accounts, trusted people, consent settings, SOS, test alerts, Safe Journeys, history, and foreground maps. It shares the website API. A debug APK has been built for 32-bit and 64-bit ARM Android phones; it has not yet been installed or tested on a physical phone. There is no iOS build.
 
 The old daily check-in feature is no longer in the public app. Its database history and migration files are kept so existing data is not deleted. Legacy owner and vault routes are excluded from the published build.
 
 ## Current project status
 
-The user reports the site is hosted at [kinguardian.pages.dev](https://kinguardian.pages.dev/). These local changes have not been deployed. The latest remote D1 migration list, live account flows, real push delivery, and website visuals have not been checked here. Check all pending migrations and back up D1 before deploying code that depends on them.
+The user reports the site is hosted at [kinguardian.pages.dev](https://kinguardian.pages.dev/). The files in this folder have not been deployed from this workspace. The latest remote database migration list, live account flows, real push delivery, and website visuals have not been checked here. Migrations `0018`–`0021` need to be checked against the live D1 list before deploying this source.
 
-The debug APK is at `outputs/KinGuardian-Android-debug-2026-11-07.apk`. It is signed with Android's debug key for testing and sideloading; it is not a Play Store release. Android API 24 and later is declared supported, including Android 10 and 14. A physical-device run is still needed. The APK and `outputs/` folder are excluded from GitHub.
+The source is a PWA, not an Android app. There is no APK or Android signing key in this folder.
 
 ## Requirements and local checks
 
@@ -39,14 +38,6 @@ npm run check:release
 ```
 
 The current Node suite checks migrations and SQL, authentication helpers, encryption helpers, static accessibility, and UI behavior. It does not replace tests against the live Cloudflare services or a visual browser review.
-
-To check the native app source, run these commands from `mobile/`:
-
-```powershell
-npm ci
-npm run typecheck
-npm test
-```
 
 To run a local Pages preview:
 
@@ -73,19 +64,17 @@ Keep `functions/` and `migrations/` at the repository root. Upload the source fi
 
 ## Database changes
 
-The project now contains 22 numbered migrations. Migration `0022_mobile_sessions.sql` adds hashed, rotating refresh tokens for native sessions. The remote database state is unknown. From this project folder, use Wrangler to list pending migrations and make a private D1 backup before applying. Wrangler applies every migration still pending in this folder, in order. Do not deploy code that depends on a migration until that migration is applied.
+The project now contains 21 numbered migrations. Migration `0017` was shown as applied in the user's 6 November 2026 screenshot. The current production state after that screenshot is unknown. Check it with Wrangler and make a private backup before any production migration. The new Safe Journey and location changes depend on migrations `0018` through `0021`; do not publish matching server code until the live database has all required migrations.
 
 See [DATABASE_GUIDE.md](DATABASE_GUIDE.md). No production migration or deployment was run by this update.
 
 ## Free service limits and known gaps
 
 - There is no automated SMS, email, WhatsApp, or emergency-service calling provider. Browser Web Push is the only automated notice channel in the current design, and it remains best effort.
-- Native push delivery is not configured. The app does not claim that a notification was delivered.
-- The native app requests foreground location only after the user taps the map control. Background tracking and offline map downloads are not enabled.
 - You report that Turnstile is already configured in Cloudflare. The live status could not be verified here. This source requires both the Production variable `TURNSTILE_SITE_KEY` and encrypted secret `TURNSTILE_SECRET_KEY`; it blocks sign-in and registration if either is missing.
 - This project stays on free Cloudflare services. Free quotas can delay or reject work.
-- No visual browser QA, authenticated production API test, live push receipt test, independent security audit, or physical Android device test has been completed here. The debug APK does build and its signature and Android version metadata were checked.
-- `npm audit` could not reach `registry.npmjs.org` in this environment, so current package advisory status could not be checked.
+- No visual browser QA, authenticated production API test, live push receipt test, independent security audit, or Android build has been completed here.
+- `npm audit --audit-level=high` could not reach `registry.npmjs.org` in this environment, so the current advisory status is unknown.
 - The Python test scripts were not run because a Python interpreter is not installed in this environment.
 
-See [PROJECT_STATUS.md](PROJECT_STATUS.md), [SECURITY.md](SECURITY.md), [MOBILE_CONVERSION_PLAN.md](MOBILE_CONVERSION_PLAN.md), and [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) before sharing the site or app with real users.
+See [PROJECT_STATUS.md](PROJECT_STATUS.md), [SECURITY.md](SECURITY.md), and [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) before sharing the site with real users.

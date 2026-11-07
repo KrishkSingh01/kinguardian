@@ -4,7 +4,7 @@ function csrfFromCookie() {
   return pair ? pair.slice("__Host-kg_csrf=".length) : "";
 }
 
-export async function requestJson(path, { method = "GET", body, headers = {} } = {}) {
+export async function requestJson(path, { method = "GET", body, headers = {}, signal } = {}) {
   const requestHeaders = new Headers(headers);
   const upperMethod = method.toUpperCase();
   if (body !== undefined) requestHeaders.set("Content-Type", "application/json");
@@ -19,6 +19,7 @@ export async function requestJson(path, { method = "GET", body, headers = {} } =
     body: body === undefined ? undefined : JSON.stringify(body),
     credentials: "same-origin",
     cache: "no-store",
+    signal,
   });
   let data = {};
   try { data = await response.json(); } catch { /* keep a generic response */ }

@@ -12,7 +12,6 @@ import { ActionButton } from "./components/ActionButton";
 import { AuthScreen } from "./screens/AuthScreen";
 import { AlertsScreen, HomeScreen, JourneysScreen, PeopleScreen, SettingsScreen } from "./screens/MainScreens";
 import { MapScreen } from "./screens/MapScreen";
-import { configureNativeNotificationChannels } from "./notifications/nativeNotifications";
 import { colors } from "./theme/colors";
 
 type TabName = "Home" | "People" | "Journeys" | "Map" | "Alerts" | "Settings";
@@ -29,12 +28,6 @@ export default function App() {
   useEffect(() => NetInfo.addEventListener((state) => {
     setOffline(state.isConnected === false || state.isInternetReachable === false);
   }), []);
-
-  useEffect(() => {
-    void configureNativeNotificationChannels().catch(() => {
-      setStartupNotice("Phone notification channels could not be prepared. You can still use KinGuardian's in-app alerts.");
-    });
-  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -99,12 +92,12 @@ export default function App() {
                 tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
                 tabBarIcon: ({ color }) => <Text style={{ fontSize: 17, color }}>{({ Home: "⌂", People: "♡", Journeys: "◷", Map: "⌖", Alerts: "◇", Settings: "⚙" } as Record<string, string>)[route.name]}</Text>,
               })}>
-                <Tab.Screen name="Home" options={{ title: "KinGuardian" }}>{({ navigation }) => <HomeScreen user={session.user} onOpenSettings={() => navigation.navigate("Settings")} />}</Tab.Screen>
+                <Tab.Screen name="Home" options={{ title: "KinGuardian" }}>{() => <HomeScreen user={session.user} onSignOut={() => { void signOut(); }} />}</Tab.Screen>
                 <Tab.Screen name="People" component={PeopleScreen} />
                 <Tab.Screen name="Journeys" component={JourneysScreen} />
                 <Tab.Screen name="Map" component={MapScreen} />
                 <Tab.Screen name="Alerts" component={AlertsScreen} />
-                <Tab.Screen name="Settings" options={{ title: "Settings" }}>{({ navigation }) => <SettingsScreen user={session.user} onSignOut={() => { void signOut(); }} onOpenPeople={() => navigation.navigate("People")} />}</Tab.Screen>
+                <Tab.Screen name="Settings" options={{ title: "Settings" }}>{() => <SettingsScreen user={session.user} onSignOut={() => { void signOut(); }} />}</Tab.Screen>
               </Tab.Navigator>
           </NavigationContainer>}
       </View>

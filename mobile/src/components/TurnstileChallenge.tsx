@@ -31,29 +31,19 @@ export function TurnstileChallenge({ action, onToken }: Props) {
       <View style={styles.webview}>
         <WebView
           source={source}
-          originWhitelist={["https://*", "http://*", "about:blank", "about:srcdoc"]}
+          originWhitelist={["https://*"]}
           javaScriptEnabled
           domStorageEnabled
-          thirdPartyCookiesEnabled
           setSupportMultipleWindows={false}
           mixedContentMode="never"
           onLoadStart={() => setLoading(true)}
           onLoadEnd={() => setLoading(false)}
           onMessage={handleMessage}
           onError={() => { setLoading(false); setMessage("Could not load the security check. Check your connection and reload."); }}
-          onHttpError={(event) => {
-            if (event.nativeEvent.statusCode >= 400) {
-              setLoading(false);
-              setMessage("The security check server returned an error. Check your connection and try again.");
-            }
-          }}
           onShouldStartLoadWithRequest={(request) => {
-            const normalized = request.url.toLowerCase();
-            if (normalized === "about:blank" || normalized === "about:srcdoc") return true;
             try {
-              const url = new URL(request.url);
-              const allowedHost = url.hostname === "kinguardian.pages.dev" || url.hostname === "challenges.cloudflare.com";
-              return allowedHost && (url.protocol === "https:" || url.protocol === "http:");
+              const host = new URL(request.url).hostname;
+              return host === "kinguardian.pages.dev" || host === "challenges.cloudflare.com";
             } catch { return false; }
           }}
         />
@@ -67,7 +57,7 @@ export function TurnstileChallenge({ action, onToken }: Props) {
 const styles = StyleSheet.create({
   wrap: { gap: 7, marginTop: 10 },
   label: { color: colors.text, fontWeight: "600" },
-  webview: { height: 132, overflow: "hidden", borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.white },
+  webview: { height: 94, overflow: "hidden", borderWidth: 1, borderColor: colors.border, borderRadius: 12, backgroundColor: colors.white },
   loading: { ...StyleSheet.absoluteFill, alignItems: "center", justifyContent: "center", backgroundColor: colors.surface },
   status: { color: colors.muted, fontSize: 12 },
 });

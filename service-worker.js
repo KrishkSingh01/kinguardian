@@ -1,5 +1,5 @@
 const CACHE_PREFIX = "kinguardian-static-";
-const CACHE_NAME = `${CACHE_PREFIX}v16`;
+const CACHE_NAME = `${CACHE_PREFIX}v19`;
 const STATIC_ASSETS = [
   "./",
   "./index.html",

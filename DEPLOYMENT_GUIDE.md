@@ -8,7 +8,7 @@ The changes in this folder have not been deployed. A public Turnstile status che
 
 1. Review the files in this folder and keep the `.gitignore` rules.
 2. Check the current D1 migration list and make a private backup using [DATABASE_GUIDE.md](DATABASE_GUIDE.md).
-3. Confirm every required migration is applied before publishing the matching Functions code. The current source includes migrations through `0022_mobile_sessions.sql`. From the project root, `wrangler d1 migrations list kinguardian-db --remote` shows what is still pending. `wrangler d1 migrations apply kinguardian-db --remote` applies all pending files from this checkout in order, so check the list and keep a private backup first.
+3. Confirm every required migration is applied before publishing the matching Functions code. This source includes migrations `0018`–`0022` beyond the migration `0017` shown in the user's screenshot. Migration `0022_mobile_sessions.sql` is needed for native app sign-in and refresh sessions.
 4. Upload the intended source to the existing GitHub repository. Do not upload local secrets, dependency folders, backups, Wrangler state, or generated files. See [RELEASE_SECURITY.md](RELEASE_SECURITY.md).
 5. Wait for the GitHub commit to finish before checking Cloudflare Pages.
 
@@ -37,6 +37,8 @@ In Cloudflare **Workers & Pages > kinguardian > Settings**, check the **Producti
 - Required free Turnstile: you report that it is already configured. Confirm the Production variable `TURNSTILE_SITE_KEY` and encrypted secret `TURNSTILE_SECRET_KEY` are present. If either is missing or the check is unavailable, sign-in and registration fail closed. See [TURNSTILE_SETUP.md](TURNSTILE_SETUP.md).
 
 The scheduled Worker is separate from Pages. A screenshot showed a scheduled Worker existed, but its deployed code and VAPID settings were not verified here. For Web Push, the Worker needs the same `DB` and VAPID public key, plus encrypted `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` secrets. Do not put the private key in Pages, GitHub, or browser code. Worker secret changes can publish a new Worker version; review before changing them.
+
+The website bundles its map renderer with the build, so it no longer needs to download the map library from UNPKG. Map images and map data still come from the free OpenFreeMap service and need internet access. The Android app also needs internet to load map data.
 
 ## Run checks before asking Cloudflare to publish
 

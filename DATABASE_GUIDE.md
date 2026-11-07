@@ -28,13 +28,12 @@ Do not share or upload this file. Use a new filename for each backup so you do n
 
 ## 3. Review migration order
 
-This source contains migrations `0001` through `0022`:
+This source contains migrations `0001` through `0021`:
 
 - `0018_safe_journeys.sql` creates Safe Journey tables and rebuilds notification tables while copying their existing rows. It preserves the old check-in tables and data.
 - `0019_encrypted_location_points.sql` adds encrypted location point storage.
 - `0020_journey_connection_permissions.sql` adds a default-off Safe Journey consent setting.
 - `0021_sos_encrypted_locations.sql` adds an SOS location timestamp and validation triggers. Existing encrypted payload columns were created in `0004`.
-- `0022_mobile_sessions.sql` adds storage for hashed, one-use native refresh tokens with a bounded token-family lifetime.
 
 These migrations are numbered and must apply in order. The source update did not apply any remote migration. After the backup, check the Wrangler migration list again. If a migration is pending, confirm which exact files are pending and that this is the right Cloudflare account and database before applying.
 

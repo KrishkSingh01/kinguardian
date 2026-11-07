@@ -3,29 +3,15 @@
 .circle-management-heading .eyebrow { margin-bottom: 4px; }
 .circle-management-heading h3 { margin-bottom: 0; font-size: 1.15rem; }
 .circle-management > p:not(.eyebrow) { max-width: 700px; margin: 11px 0 15px; color: var(--ink-muted); font-size: .73rem; }
-.connection-list, .invitation-list { display: grid; gap: 10px; margin: 14px 0 0; padding: 0; list-style: none; }
-.connection-row, .invitation-row { display: grid; gap: 13px; border: 1px solid var(--line); border-radius: 15px; padding: 15px; background: var(--surface); }
-.connection-row { grid-template-columns: minmax(180px, .7fr) minmax(0, 1.4fr) auto; align-items: center; }
-.invitation-row { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
-.connection-identity, .invitation-identity { display: flex; min-width: 0; align-items: center; justify-content: flex-start; gap: 11px; }
-.person-avatar { display: grid; width: 42px; height: 42px; flex: 0 0 auto; place-items: center; border: 1px solid var(--line-strong); border-radius: 14px 14px 14px 5px; background: var(--forest-mist); color: var(--forest); font-size: .95rem; font-weight: 800; }
-.person-info { display: grid; min-width: 0; gap: 4px; }
-.person-info strong { color: var(--ink); font-size: .9rem; overflow-wrap: anywhere; }
-.person-info small { color: var(--ink-muted); font-size: .72rem; line-height: 1.4; text-align: left; }
-.request-status { display: inline-flex; width: fit-content; flex: 0 0 auto; align-items: center; border-radius: 99px; padding: 6px 9px; background: var(--surface-raised); color: var(--ink-soft); font-size: .68rem; font-weight: 750; }
-.request-status-pending { background: color-mix(in srgb, #d5a23b 18%, var(--surface)); color: #75500b; }
-.request-status-accepted { background: color-mix(in srgb, #2a8b5d 14%, var(--surface)); color: var(--forest); }
-.request-status-rejected { background: color-mix(in srgb, var(--coral) 13%, var(--surface)); color: var(--coral-text); }
-.request-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
-.request-actions .button { min-width: 90px; }
-.request-status-sections { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 24px; }
-.request-status-sections h4 { margin: 0; color: var(--ink); font-size: .88rem; }
-.request-status-sections .invitation-list { margin-top: 9px; }
+.connection-list, .invitation-list { display: grid; gap: 9px; margin: 14px 0 0; padding: 0; list-style: none; }
+.connection-row, .invitation-row { display: grid; gap: 11px; border: 1px solid var(--line); border-radius: 13px; padding: 13px; }
+.connection-identity, .invitation-identity { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.connection-identity strong, .invitation-identity strong { color: var(--ink); font-size: .8rem; overflow-wrap: anywhere; }
+.connection-identity small, .invitation-identity small { color: var(--ink-muted); font-size: .65rem; text-align: right; }
 .connection-preferences { display: flex; flex-wrap: wrap; gap: 8px 16px; }
-.connection-preferences label { display: flex; align-items: center; gap: 8px; color: var(--ink-soft); font-size: .76rem; }
+.connection-preferences label { display: flex; align-items: center; gap: 7px; color: var(--ink-soft); font-size: .68rem; }
 .connection-preferences input { width: 16px; height: 16px; accent-color: var(--forest); }
-.connection-row .button, .invitation-row .button { width: fit-content; min-height: 40px; padding: 7px 12px; font-size: .75rem; }
-.circle-management-heading .text-link { min-height: 38px; }
+.connection-row .button, .invitation-row .button { width: fit-content; min-height: 33px; padding: 5px 10px; font-size: .65rem; }
 .circle-empty-note { margin: 13px 0 0; color: var(--ink-muted); font-size: .72rem; }
 .invitation-result { display: grid; gap: 7px; margin-top: 16px; border: 1px solid var(--line-strong); border-radius: 13px; padding: 14px; background: var(--surface-raised); }
 .invitation-result label { margin-top: 5px; color: var(--ink); font-size: .7rem; font-weight: 700; }
@@ -37,16 +23,4 @@
 .invitation-copy-row { display: flex; gap: 7px; }
 .invitation-copy-row .button { flex: 0 0 auto; min-height: 38px; padding: 5px 9px; font-size: .65rem; }
 .invitation-row .form-message { margin: 0; }
-@media (max-width: 860px) {
-  .connection-row { grid-template-columns: minmax(0, 1fr) auto; }
-  .connection-preferences { grid-column: 1 / -1; }
-  .request-status-sections { grid-template-columns: 1fr; }
-}
-@media (max-width: 520px) {
-  .connection-row, .invitation-row { grid-template-columns: minmax(0, 1fr); gap: 11px; padding: 13px; }
-  .connection-identity, .invitation-identity { align-items: flex-start; }
-  .connection-row > .button, .request-actions { width: 100%; }
-  .request-actions .button { flex: 1 1 110px; }
-  .connection-preferences { display: grid; grid-template-columns: 1fr; gap: 9px; }
-  .invitation-copy-row { align-items: stretch; flex-direction: column; }
-}
+@media (max-width: 520px) { .connection-identity, .invitation-identity { align-items: flex-start; flex-direction: column; }.connection-identity small, .invitation-identity small { text-align: left; }.invitation-copy-row { align-items: stretch; flex-direction: column; } }

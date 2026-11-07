@@ -1,50 +1,56 @@
 import { queueLatestPoint } from "./map-point-queue.js";
+import * as maplibre from "maplibre-gl";
 
-const MAPLIBRE_MODULE_URL = "https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.mjs";
 const MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/bright";
+maplibre.setWorkerUrl("/js/maplibre-gl-worker.mjs");
 const markers = new Map();
 const pendingPoints = [];
 let pendingFocus;
 const state = document.querySelector("#map-state");
 const canvas = document.querySelector("#safety-map");
-const feedback = document.querySelector("#map-feedback");
-const feedbackText = document.querySelector("#map-feedback-text");
-const retryButton = document.querySelector("#map-retry");
 const locateButton = document.querySelector("#map-locate");
+const retryButton = document.querySelector("#map-retry");
 const tiltButton = document.querySelector("#map-tilt");
 const resetButton = document.querySelector("#map-reset");
 
 let map;
 let MarkerClass;
 let is3d = false;
-let loadTimeout;
+let mapLoadTimeout;
+let lastMapError = "";
+let mapLoadAttempt = 0;
 
-if (canvas && state && locateButton && tiltButton && resetButton) {
+if (canvas && state && locateButton && retryButton && tiltButton && resetButton) {
   locateButton.addEventListener("click", locateOnMap);
+  retryButton.addEventListener("click", () => { void startMap(); });
   tiltButton.addEventListener("click", toggle3d);
   resetButton.addEventListener("click", resetMap);
-  retryButton?.addEventListener("click", retryMap);
   window.addEventListener("kinguardian:map-point", (event) => addPoint(event.detail));
   window.addEventListener("kinguardian:map-focus", (event) => focusPoint(event.detail));
   void startMap();
 }
 
 async function startMap() {
+  const attempt = ++mapLoadAttempt;
+  window.clearTimeout(mapLoadTimeout);
+  lastMapError = "";
+  retryButton.hidden = true;
   canvas.dataset.ready = "false";
-  canvas.dataset.failed = "false";
-  setMapState("Starting the map…", "busy");
-  if (feedback && feedbackText) {
-    feedback.hidden = false;
-    feedbackText.textContent = "Starting the map…";
-  }
-  if (retryButton) retryButton.hidden = true;
-  clearTimeout(loadTimeout);
-  loadTimeout = setTimeout(() => failMap("The map is taking too long to load. Check your internet connection and retry."), 20_000);
+  setMapState("Loading map data…");
+  map?.remove();
+  map = undefined;
+  mapLoadTimeout = window.setTimeout(() => {
+    if (attempt !== mapLoadAttempt || canvas.dataset.ready === "true") return;
+    mapLoadAttempt += 1;
+    map?.remove();
+    map = undefined;
+    setMapState("Map data did not respond. Your internet may still work while the map service or a browser filter is unavailable.", "error");
+    retryButton.hidden = false;
+  }, 15_000);
   try {
-    const moduleUrl = MAPLIBRE_MODULE_URL;
-    const maplibre = await import(moduleUrl);
+    if (attempt !== mapLoadAttempt) return;
     MarkerClass = maplibre.Marker;
-    addStylesheet("https://unpkg.com/maplibre-gl@6.16.0/dist/maplibre-gl.css");
+    addStylesheet("/css/maplibre-gl.css");
     map = new maplibre.Map({
       container: canvas,
       style: MAP_STYLE_URL,
@@ -57,43 +63,27 @@ async function startMap() {
     map.addControl(new maplibre.NavigationControl({ visualizePitch: true }), "top-right");
     map.addControl(new maplibre.ScaleControl({ maxWidth: 120, unit: "metric" }), "bottom-left");
     map.on("load", () => {
-      clearTimeout(loadTimeout);
-      addBuildingsLayer();
+      if (attempt !== mapLoadAttempt) return;
+      window.clearTimeout(mapLoadTimeout);
+      try { addBuildingsLayer(); } catch { /* Keep the 2D safety map usable if optional 3D buildings fail. */ }
       for (const point of pendingPoints.splice(0)) addPoint(point);
       if (pendingFocus) focusPoint(pendingFocus);
       setMapState("Map ready. Choose Show my location to display your position.", "ready");
       canvas.dataset.ready = "true";
-      canvas.dataset.failed = "false";
-      if (feedback) feedback.hidden = true;
+      retryButton.hidden = true;
     });
-    map.on("error", (event) => {
-      if (!canvas.dataset.ready && !canvas.dataset.failed && event?.error) {
-        failMap("Map data could not load. Check your internet connection and retry.");
-      }
-    });
-  } catch {
-    failMap("The map could not start in this browser. Try an updated browser with WebGL enabled.");
+    map.on("error", (event) => { lastMapError = event?.error?.message || "Map request failed."; });
+  } catch (error) {
+    if (attempt !== mapLoadAttempt) return;
+    window.clearTimeout(mapLoadTimeout);
+    map?.remove();
+    map = undefined;
+    const webglFailure = error?.name === "GPUInitializationError" || /webgl|web worker/iu.test(error?.message || "");
+    setMapState(webglFailure
+      ? "This browser or graphics hardware could not start the map renderer. Your location has not been shared."
+      : "The map library could not load. Your internet may work while the map CDN is blocked or unavailable.", "error");
+    retryButton.hidden = false;
   }
-}
-
-function failMap(message) {
-  clearTimeout(loadTimeout);
-  if (!canvas || canvas.dataset.ready === "true") return;
-  canvas.dataset.failed = "true";
-  setMapState(message, "error");
-  if (feedback && feedbackText) {
-    feedbackText.textContent = message;
-    feedback.hidden = false;
-  }
-  if (retryButton) retryButton.hidden = false;
-}
-
-function retryMap() {
-  clearTimeout(loadTimeout);
-  try { map?.remove(); } catch { /* A partially created map may not have initialized. */ }
-  map = undefined;
-  markers.clear();
-  void startMap();
 }
 
 function addStylesheet(href) {
@@ -220,9 +210,4 @@ function resetMap() {
 function setMapState(message, kind = "busy") {
   state.textContent = message;
   state.dataset.state = kind;
-  if (kind === "error" && feedbackText && feedback) {
-    feedbackText.textContent = message;
-    feedback.hidden = false;
-    if (retryButton) retryButton.hidden = false;
-  }
 }

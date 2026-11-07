@@ -1,44 +1,54 @@
 # KinGuardian project status
 
-Updated 7 November 2026. This describes the local project source. It does not claim the current files are live on Cloudflare.
+Updated 6 November 2026. This describes the files in this folder. It does not claim that the same code is live on Cloudflare.
 
-## Completed locally
+## Completed in this source update
 
-- The website/PWA has public member registration, sign-in and recovery, trusted people and consent controls, cancelable SOS, Safe Journeys, encrypted-at-rest location sharing, emergency information, and best-effort web push.
-- The separate Expo/React Native app uses the same account and API. It includes sign-in, registration and recovery, trusted people, SOS and test alert, Safe Journeys, history, foreground map, and settings.
-- Recent website and Android changes improve trusted-person request/reply visibility, map retry/error handling, Turnstile loading in the app, local notification settings and test alerts, and the SOS repeat reminder.
-- Native sessions use bearer tokens and one-use refresh-token rotation. Native offline SOS data fails closed if SQLCipher is unavailable and waits for the person to retry; it does not claim delivery.
-- Added Android CMake path shortening so native builds can complete on Windows.
-- Built a debug-signed APK for 32-bit and 64-bit ARM phones. It declares minimum Android API 24 (Android 7), so Android 10 and 14 are within its declared range. The file is in `outputs/KinGuardian-Android-debug-2026-11-07.apk` and is ignored by GitHub rules.
+- Replaced the daily check-in user flow with Safe Journey timers. Old tables and data remain intact.
+- Added a separate recipient choice for Safe Journey alerts. A person who declines this choice will not receive journey updates.
+- Added encrypted D1 storage for current location-sharing points and SOS locations. Consent is checked when data is read or sent. Location data is encrypted at rest, but the Worker can decrypt it for a permitted recipient; this is not end-to-end encryption.
+- Made SOS use a fixed 10-second cancelable countdown. SOS can still be saved if the user has no trusted recipients, but nobody else is notified in that case.
+- Added live SOS location updates only while the SOS page is visible and open. The app cannot track in the background.
+- Added local encrypted caches for saved trusted-person, notification, Safe Journey, SOS, and location-sharing status. Offline lists are read-only and may be out of date. An offline SOS stays on the device until a later sync.
+- Updated the 3D map integration and public copy. External map tiles still require internet.
+- Fixed map points arriving before MapLibre finishes loading: the newest location for each point is now queued safely, with a bounded queue.
+- Made Turnstile required for both login and registration. Missing or incomplete Cloudflare keys now fail closed instead of silently disabling the bot check.
+- Added migration constraints, location-crypto checks, and a release check that verifies every Service Worker cache path exists in `dist/`.
+- Updated setup, database, and security documentation to match the current source.
 
-## Checks completed
+## Checks completed in this workspace
 
-- Root `npm test`: 76 passed, 0 failed.
-- In `mobile/`, `npm test`: 6 passed, 0 failed.
-- In `mobile/`, `npm run typecheck`: passed.
-- The Android Gradle debug build completed successfully for `armeabi-v7a` and `arm64-v8a` using Android Studio's bundled JDK.
-- `apksigner` verified the APK's v2 signature; `aapt` confirmed package `dev.kinguardian.app`, minimum API 24, target API 36, and both ARM architectures.
-- The APK is debug-signed for testing and sideloading; it is not a Play Store release build.
+- `npm test`: 70 passed, 0 failed.
+- `$env:KG_RELEASE_TYPE = 'production'; npm run check:release`: passed; built KinGuardian `0.1.0` with 50 SHA-256-listed public assets and no detected secrets or private/server files in `dist/`.
+- The Node tests applied all 21 numbered migrations to an in-memory SQLite database and compiled selected application SQL against that schema.
+- The new encrypted location helper round-tripped encrypted data and rejected the wrong owner/share context.
 
-## Not verified yet
+## Not verified here
 
-- No visual browser review was possible: the computer-control tool failed to start because its kernel files were missing. No claim of visual verification is made.
-- ADB reports no connected Android device. The APK has not been installed or exercised on a physical phone, so the earlier “KinGuardian keeps stopping” report is not confirmed fixed on-device.
-- No live authenticated Pages/API flow, live push receipt, real emergency, independent security audit, or production deployment was performed. Do not test SOS with a real emergency.
-- No iOS build is available on this Windows computer; that requires macOS and Xcode.
-- Remote D1 migration state is unknown. This source includes `0022_mobile_sessions.sql`; confirm that migration is applied before deploying the matching native-auth code.
-- Native push delivery is not configured. Local notification permission and test alert only test notifications on the device; remote Android push requires Firebase/FCM configuration. No credentials are included.
-- Email, SMS, and WhatsApp automation are not configured. KinGuardian is not an emergency service.
-- Location is encrypted at rest, not end-to-end encrypted. The server can decrypt it when consent rules allow. The map uses public tiles and only reads foreground location after a user action.
-- A current npm advisory scan could not be completed earlier because the npm registry was unreachable; dependency advisories remain unverified.
+- `npm audit --audit-level=high` could not reach `registry.npmjs.org` (`ENOTFOUND`). Dependency advisory status is unknown.
+- Python-only tests could not run; no Python interpreter is installed.
+- The Pages website was not visually checked in a browser. Codex Work settings reported local browser use is disabled; I left the user's Brave tabs alone and did not bypass that restriction. A local Wrangler preview started, but sandbox permissions blocked requests to `127.0.0.1`.
+- The authenticated Pages API, production D1, VAPID push delivery, map tiles, offline behavior on real devices, and PWA install/update behavior were not tested against live services.
+- No independent security review, penetration test, Android package, or APK exists.
 
-## Manual steps still needed
+## Production status and actions
 
-1. Install the APK on the phone and confirm whether it opens without crashing. A USB installation was not possible because ADB currently lists no connected device. You can also copy the APK to the phone and open it there; Android may ask you to allow installs from that file app.
-2. Before deploying code that depends on migration `0022_mobile_sessions.sql`, run `wrangler d1 migrations list kinguardian-db --remote` from this project folder. If that migration is pending, keep a private D1 backup and apply the intended migration first. Never clear database tables to fix a migration.
-3. Upload reviewed source files to GitHub and let Cloudflare Pages deploy. Do not upload `outputs/`, APKs, secrets, D1 backups, or signing keys. The existing `.gitignore` excludes `outputs/` and `*.apk`.
-4. Configure a free Firebase project only if you want remote Android push. Keep Firebase private configuration out of GitHub. Native push is currently not connected.
+- The user reports that `https://kinguardian.pages.dev/` is deployed. This workspace is not connected to the GitHub repository and its changes have not been uploaded.
+- A screenshot showed migration `0017_daily_checkin_schedules.sql` applied and the scheduled Worker deployed on 6 November 2026. A read-only Wrangler migration check was attempted, but Cloudflare could not be reached because of a connection/proxy restriction. The current remote migration list is unknown; no remote migration was run.
+- Migrations `0018_safe_journeys.sql`, `0019_encrypted_location_points.sql`, `0020_journey_connection_permissions.sql`, and `0021_sos_encrypted_locations.sql` are in this source. Check the actual remote list and back up D1 before applying any missing migration. Do not apply by filename guess; Wrangler tracks the sequence.
+- This update did not migrate the production database, publish Pages code, deploy the Worker, or change secrets.
+- You report that Turnstile is already configured in Cloudflare. This workspace could not verify the live setting. The code requires Production variable `TURNSTILE_SITE_KEY` and encrypted secret `TURNSTILE_SECRET_KEY`; login and registration fail closed if either is missing. Check the status using [TURNSTILE_SETUP.md](TURNSTILE_SETUP.md), without sharing either value.
+- Email automation was dropped by the user. No paid messaging provider or automated SMS provider is configured.
 
-The site is reported to be hosted at [kinguardian.pages.dev](https://kinguardian.pages.dev/). No deployment or remote database change was made in this update.
+## Next actions for the project owner
 
-See [README.md](README.md), [mobile/README.md](mobile/README.md), [DATABASE_GUIDE.md](DATABASE_GUIDE.md), [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md), and [RELEASE_SECURITY.md](RELEASE_SECURITY.md).
+1. Check that the existing Turnstile settings are in Cloudflare's Production environment and the public status endpoint says `mode: enabled`. Do not share the secret.
+2. In PowerShell, check the current D1 migration list and make a private backup. Follow [DATABASE_GUIDE.md](DATABASE_GUIDE.md).
+3. Apply missing migrations only after confirming the account and database are correct. Keep the backup outside the project and GitHub.
+4. Upload the reviewed source to the existing GitHub repository. Keep the `.gitignore` exclusions and the list in [RELEASE_SECURITY.md](RELEASE_SECURITY.md).
+5. Let Cloudflare Pages build from the repository root with `npm run build` and output folder `dist`.
+6. Verify the deployed app using test accounts and non-sensitive data. Do not test with a real emergency.
+
+## Important limits
+
+KinGuardian is a prototype, not an emergency service. SOS and notifications are best-effort. No free automatic SMS delivery is configured. Offline data may be stale, and the browser cannot send an alert until it reconnects. The map and its tiles are online services. The app cannot reliably track a person in the background.

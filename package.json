@@ -21,6 +21,7 @@
   "dependencies": {
     "@block65/webcrypto-web-push": "2.0.0",
     "libphonenumber-js": "1.13.15",
+    "maplibre-gl": "6.16.0",
     "qr": "0.7.2"
   },
   "devDependencies": {

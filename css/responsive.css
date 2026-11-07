@@ -39,9 +39,6 @@
   .welcome-grid { grid-template-columns: 1fr; gap: 13px; }
   .hero-card { min-height: 330px; border-radius: 24px; padding: 25px 20px; }
   .hero-content { width: 100%; }
-  .home-safety-actions { justify-content: flex-start; flex-wrap: wrap; gap: 10px 16px; }
-  .hero-content .sos-button { margin: 0; }
-  .sos-settings-shortcut { margin: 0 0 8px; }
   .hero-card h2 { font-size: clamp(1.85rem, 8vw, 2.22rem); }
   .hero-card .hero-content > p:not(.hero-footnote) { max-width: 300px; font-size: .78rem; }
   .hero-art { top: auto; right: -29px; bottom: 4px; width: 142px; height: 142px; opacity: .2; }
