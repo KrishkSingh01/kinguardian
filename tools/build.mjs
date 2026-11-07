@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
+import { cp, copyFile, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
@@ -12,8 +12,8 @@ if (!new Set(["development", "preview", "production"]).has(releaseType)) {
   throw new Error("KG_RELEASE_TYPE must be development, preview, or production.");
 }
 const staticFiles = [
-  "index.html", "dashboard.html", "login.html", "register.html", "recover.html", "change-password.html", "pair-device.html", "sos.html", "location.html", "emergency.html", "privacy.html",
-  "manifest.webmanifest", "service-worker.js", "mobile-turnstile.html", "_headers", "_routes.json",
+  "index.html", "dashboard.html", "login.html", "register.html", "recover.html", "change-password.html", "pair-device.html", "sos.html", "location.html", "emergency.html", "privacy.html", "mobile-turnstile.html",
+  "manifest.webmanifest", "service-worker.js", "_headers", "_routes.json",
 ];
 const staticDirectories = ["css", "assets"];
 const entryPoints = [
@@ -34,7 +34,15 @@ await rm(path.join(outputRoot, "css", "owner.css"), { force: true });
 for (const filename of ["contacts.css", "invite.css", "checkins.css"]) {
   await rm(path.join(outputRoot, "css", filename), { force: true });
 }
+await copyFile(
+  path.join(projectRoot, "node_modules", "maplibre-gl", "dist", "maplibre-gl.css"),
+  path.join(outputRoot, "css", "maplibre-gl.css"),
+);
 await mkdir(path.join(outputRoot, "js"), { recursive: true });
+await copyFile(
+  path.join(projectRoot, "node_modules", "maplibre-gl", "dist", "maplibre-gl-worker.mjs"),
+  path.join(outputRoot, "js", "maplibre-gl-worker.mjs"),
+);
 await build({
   entryPoints,
   bundle: true,

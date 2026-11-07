@@ -171,9 +171,12 @@ if (panel) {
     form.hidden = true;
     statusLabel.textContent = journey.status === "overdue" || journey.status === "offline_overdue" ? "RETURN TIMER PASSED" : "JOURNEY IN PROGRESS";
     returnText.textContent = `Expected return: ${formatTime(journey.expectedReturnAt)}`;
+    const recipientNames = (journey.recipientNames || []).map((person) =>
+      typeof person === "string" ? person : person?.username,
+    ).filter((username) => typeof username === "string" && username.length > 0);
     trustedCopy.textContent = journey.status === "local_pending"
       ? "Not shared yet. Reconnect and sign in to notify your trusted people."
-      : `Timer shared with ${(journey.recipientNames || []).join(", ") || "your selected trusted people"}.`;
+      : `Timer shared with ${recipientNames.join(", ") || "your selected trusted people"}.`;
     tick();
     clearInterval(tickTimer);
     tickTimer = window.setInterval(tick, 1000);
@@ -266,7 +269,8 @@ if (panel) {
       }
     } catch (error) {
       showMessage(message, error.message || "KinGuardian could not verify that action.");
-      passwordInput.select();
+      if (error.code === "RATE_LIMITED") passwordInput.value = "";
+      else passwordInput.select();
     } finally { actionButton.disabled = false; }
   }
 

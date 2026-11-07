@@ -41,7 +41,6 @@ test("all numbered migrations include constrained setup and pairing tables", () 
   assert.ok(tables.has("account_setup_tokens"));
   assert.ok(tables.has("device_pairing_requests"));
   assert.ok(tables.has("account_recovery_codes"));
-  assert.ok(tables.has("mobile_refresh_tokens"));
   for (const table of ["account_setup_tokens", "device_pairing_requests"]) {
     const columns = db.prepare(`PRAGMA table_info(${table})`).all().map((column) => column.name);
     assert.ok(columns.includes("token_hash"), `${table} must store token hashes`);

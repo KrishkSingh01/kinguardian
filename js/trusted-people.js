@@ -3,50 +3,26 @@ import { cacheOfflineProfile, getOfflineProfile, getOfflineRecord, putOfflineRec
 
 const connectionList = document.querySelector("#connection-list");
 const requestList = document.querySelector("#invitation-list");
-const sentRequestList = document.querySelector("#sent-request-list");
-const recentRepliesList = document.querySelector("#recent-replies-list");
 const form = document.querySelector("#username-search-form");
 if (connectionList && form) {
   const message = document.querySelector("#circle-message");
   const connectionEmpty = document.querySelector("#connection-empty");
-  const incomingEmpty = document.querySelector("#incoming-requests-empty");
-  const sentEmpty = document.querySelector("#sent-requests-empty");
-  const repliesEmpty = document.querySelector("#recent-replies-empty");
   const result = document.querySelector("#username-search-result");
   let currentUser = null;
-  let connectionLoad = null;
-  let refreshTimer;
 
   form.addEventListener("submit", searchUsername);
-  document.querySelector("#refresh-invitations")?.addEventListener("click", () => void loadConnections());
+  document.querySelector("#refresh-invitations").addEventListener("click", loadConnections);
   connectionList.addEventListener("change", updatePreference);
   connectionList.addEventListener("click", removeConnection);
   requestList.addEventListener("click", answerRequest);
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && currentUser) void loadConnections();
-  });
   window.addEventListener("kg:session", (event) => {
     currentUser = event.detail;
     cacheOfflineProfile(currentUser);
     void loadConnections();
-    scheduleRefresh();
   });
-  window.addEventListener("kg:offline", () => { currentUser = getOfflineProfile(); stopRefresh(); void loadCachedConnections(); });
-  window.addEventListener("offline", () => { currentUser = getOfflineProfile(); stopRefresh(); void loadCachedConnections(); });
-  window.addEventListener("online", () => { if (currentUser) { void loadConnections(); scheduleRefresh(); } });
-
-  function scheduleRefresh() {
-    stopRefresh();
-    if (!currentUser || !navigator.onLine) return;
-    refreshTimer = window.setInterval(() => {
-      if (!document.hidden) void loadConnections();
-    }, 30_000);
-  }
-
-  function stopRefresh() {
-    if (refreshTimer) window.clearInterval(refreshTimer);
-    refreshTimer = undefined;
-  }
+  window.addEventListener("kg:offline", () => { currentUser = getOfflineProfile(); void loadCachedConnections(); });
+  window.addEventListener("offline", () => { currentUser = getOfflineProfile(); void loadCachedConnections(); });
+  window.addEventListener("online", () => { if (currentUser) void loadConnections(); });
 
   async function searchUsername(event) {
     event.preventDefault();
@@ -87,43 +63,26 @@ if (connectionList && form) {
     }
   }
 
-  function loadConnections() {
-    if (connectionLoad) return connectionLoad;
-    if (!navigator.onLine) {
-      showMessage(message, "You’re offline. Incoming requests cannot be refreshed or answered until you reconnect.", "pending");
-      return loadCachedConnections();
-    }
-    connectionLoad = (async () => {
-      try {
-        const data = await requestJson("/api/connections");
+  async function loadConnections() {
+    connectionList.replaceChildren();
+    requestList.replaceChildren();
+    try {
+      const data = await requestJson("/api/connections");
       form.querySelectorAll("input, button").forEach((control) => { control.disabled = false; });
       const connections = data.connections || [];
       connectionEmpty.hidden = connections.length > 0;
-        const requests = data.requests || [];
-        const sentRequests = data.sentRequests || [];
-        const recentReplies = data.recentReplies || [];
-        connectionList.replaceChildren(...connections.map((connection) => renderConnection(connection)));
-        requestList.replaceChildren(...requests.map(renderIncomingRequest));
-        if (sentRequestList) sentRequestList.replaceChildren(...sentRequests.map(renderSentRequest));
-        if (recentRepliesList) recentRepliesList.replaceChildren(...recentReplies.map(renderRecentReply));
-        if (incomingEmpty) incomingEmpty.hidden = requests.length > 0;
-        if (sentEmpty) sentEmpty.hidden = sentRequests.length > 0;
-        if (repliesEmpty) repliesEmpty.hidden = recentReplies.length > 0;
+      for (const connection of connections) connectionList.append(renderConnection(connection));
+      for (const request of data.requests || []) requestList.append(renderIncomingRequest(request));
+      for (const request of data.sentRequests || []) requestList.append(renderSentRequest(request));
       if (currentUser) await putOfflineRecord(currentUser.userId, "connections", connections).catch(() => undefined);
-        showMessage(message, "Trusted people and requests are up to date.", "success");
-      } catch (error) {
-        form.querySelectorAll("input, button").forEach((control) => { control.disabled = true; });
-        requestList.querySelectorAll("button").forEach((control) => { control.disabled = true; });
-        showMessage(message, `${error.message || "Trusted people could not be refreshed."} Your current request list is still shown; refresh after reconnecting.`, "error");
-      } finally {
-        connectionLoad = null;
-      }
-    })();
-    return connectionLoad;
+    } catch (error) {
+      await loadCachedConnections();
+    }
   }
 
   async function loadCachedConnections() {
     connectionList.replaceChildren();
+    requestList.replaceChildren();
     form.querySelectorAll("input, button").forEach((control) => { control.disabled = true; });
     const saved = currentUser?.userId
       ? await getOfflineRecord(currentUser.userId, "connections").catch(() => [])
@@ -131,11 +90,8 @@ if (connectionList && form) {
     const connections = saved || [];
     connectionEmpty.hidden = connections.length > 0;
     for (const connection of connections) connectionList.append(renderConnection(connection, true));
-    requestList.querySelectorAll("button").forEach((button) => { button.disabled = true; });
-    if (sentRequestList) sentRequestList.querySelectorAll("button").forEach((button) => { button.disabled = true; });
-    if (incomingEmpty) { incomingEmpty.hidden = false; incomingEmpty.textContent = "Requests need an internet connection to refresh. Reconnect to see the current list."; }
     showMessage(message, connections.length
-      ? "Showing saved trusted people. This list may be out of date; request changes need internet."
+      ? "Showing trusted people saved on this device. This list may be out of date; changes need internet."
       : "No saved trusted-person list is available on this device. Reconnect to refresh it.", "pending");
   }
 
@@ -143,18 +99,13 @@ if (connectionList && form) {
     const row = document.createElement("li");
     row.className = "connection-row";
     row.dataset.connectionId = connection.connectionId;
-    const identity = makeIdentity(connection.username, "connection-identity");
+    const identity = document.createElement("div");
+    identity.className = "connection-identity";
     const name = document.createElement("strong");
     name.textContent = `@${connection.username}`;
     const since = document.createElement("small");
     since.textContent = `Connected ${new Intl.DateTimeFormat(navigator.language, { dateStyle: "medium" }).format(connection.acceptedAt)}`;
-    const info = document.createElement("span");
-    info.className = "person-info";
-    info.append(name, since);
-    const badge = document.createElement("span");
-    badge.className = "request-status request-status-accepted";
-    badge.textContent = "Trusted member";
-    identity.append(info, badge);
+    identity.append(name, since);
     const preferences = document.createElement("div");
     preferences.className = "connection-preferences";
     for (const [key, label, value] of [
@@ -187,74 +138,21 @@ if (connectionList && form) {
     const row = document.createElement("li");
     row.className = "invitation-row";
     row.dataset.connectionId = request.connectionId;
-    const identity = makeIdentity(request.username, "invitation-identity");
-    const info = document.createElement("span");
-    info.className = "person-info";
     const text = document.createElement("strong");
-    text.textContent = `@${request.username}`;
-    const detail = document.createElement("small");
-    detail.textContent = "Wants to join your Trusted Circle";
-    info.append(text, detail);
-    const badge = document.createElement("span");
-    badge.className = "request-status request-status-pending";
-    badge.textContent = "Needs your answer";
-    identity.append(info, badge);
+    text.textContent = `@${request.username} wants to connect`;
     const accept = makeRequestButton("Accept", "accept");
     const reject = makeRequestButton("Decline", "reject");
-    const actions = document.createElement("div");
-    actions.className = "request-actions";
-    actions.append(accept, reject);
-    row.append(identity, actions);
+    row.append(text, accept, reject);
     return row;
   }
 
   function renderSentRequest(request) {
     const row = document.createElement("li");
     row.className = "invitation-row";
-    const identity = makeIdentity(request.username, "invitation-identity");
-    const info = document.createElement("span");
-    info.className = "person-info";
-    const text = document.createElement("strong");
-    text.textContent = `@${request.username}`;
-    const detail = document.createElement("small");
-    detail.textContent = "Waiting for them to accept or decline";
-    info.append(text, detail);
-    const badge = document.createElement("span");
-    badge.className = "request-status request-status-pending";
-    badge.textContent = "Pending";
-    identity.append(info, badge);
-    row.append(identity);
+    const text = document.createElement("span");
+    text.textContent = `Waiting for @${request.username} to answer your request.`;
+    row.append(text);
     return row;
-  }
-
-  function renderRecentReply(reply) {
-    const row = document.createElement("li");
-    row.className = "invitation-row invitation-row-status";
-    const identity = makeIdentity(reply.username, "invitation-identity");
-    const info = document.createElement("span");
-    info.className = "person-info";
-    const name = document.createElement("strong");
-    name.textContent = `@${reply.username}`;
-    const detail = document.createElement("small");
-    detail.textContent = reply.status === "accepted" ? "Accepted your request" : "Declined your request";
-    info.append(name, detail);
-    const badge = document.createElement("span");
-    badge.className = `request-status request-status-${reply.status}`;
-    badge.textContent = reply.status === "accepted" ? "Accepted" : "Declined";
-    identity.append(info, badge);
-    row.append(identity);
-    return row;
-  }
-
-  function makeIdentity(username, className) {
-    const identity = document.createElement("div");
-    identity.className = className;
-    const avatar = document.createElement("span");
-    avatar.className = "person-avatar";
-    avatar.setAttribute("aria-hidden", "true");
-    avatar.textContent = (username || "?").slice(0, 1).toLocaleUpperCase();
-    identity.append(avatar);
-    return identity;
   }
 
   function makeRequestButton(label, action) {
@@ -272,14 +170,13 @@ if (connectionList && form) {
     const row = button.closest("[data-connection-id]");
     const action = button.dataset.answerRequest;
     if (action === "reject" && !window.confirm("Decline this trusted-person request?")) return;
-    const rowButtons = row.querySelectorAll("button");
-    rowButtons.forEach((control) => { control.disabled = true; });
+    button.disabled = true;
     try {
       await requestJson(`/api/connections/${encodeURIComponent(row.dataset.connectionId)}`, { method: "POST", body: { action } });
       showMessage(message, action === "accept" ? "Request accepted. Choose what you want to receive." : "Request declined.", "success");
       await loadConnections();
     } catch (error) {
-      rowButtons.forEach((control) => { control.disabled = false; });
+      button.disabled = false;
       showMessage(message, error.message || "The request could not be updated.");
     }
   }

@@ -13,8 +13,6 @@ const countdownNumber = document.querySelector("#sos-countdown-number");
 const message = document.querySelector("#sos-message");
 const alertList = document.querySelector("#sos-alert-list");
 const alertEmpty = document.querySelector("#sos-alert-empty");
-const repeatStatus = document.querySelector("#sos-repeat-status");
-const repeatNowButton = document.querySelector("#sos-repeat-now");
 
 const COUNTDOWN_MS = SOS_COUNTDOWN_MS;
 let currentUser = null;
@@ -26,16 +24,17 @@ let freshLocationPromise = Promise.resolve(null);
 let activeAlertId;
 let locationWatchId;
 let lastLocationPostedAt = 0;
-let repeatCooldownTimer;
-let repeatCooldownEndsAt = 0;
 
-startButton.addEventListener("click", () => startCountdown());
-repeatNowButton?.addEventListener("click", () => startCountdown(true));
+startButton.addEventListener("click", startCountdown);
 cancelButton.addEventListener("click", cancelCountdown);
 retryButton.addEventListener("click", submitPendingAlert);
 document.querySelector("#refresh-alerts").addEventListener("click", loadAlerts);
 alertList.addEventListener("click", handleAlertAction);
-window.addEventListener("kg:session", (event) => { currentUser = event.detail; void initializeOnline(); });
+window.addEventListener("kg:session", (event) => {
+  if (!event.detail?.userId || event.detail.userId === currentUser?.userId) return;
+  currentUser = event.detail;
+  void initializeOnline();
+});
 window.addEventListener("kg:offline", () => { currentUser = getOfflineProfile(); void initializeOffline(); });
 window.addEventListener("online", () => { if (currentUser) void synchronizePending(); });
 window.addEventListener("offline", () => { stopLiveLocation(false); currentUser = getOfflineProfile(); void initializeOffline(); });
@@ -45,16 +44,58 @@ document.addEventListener("visibilitychange", () => {
   else if (currentUser && navigator.onLine) { void loadAlerts(); schedulePoll(); }
 });
 
+void initializeSession();
+
+async function initializeSession() {
+  if (!navigator.onLine) {
+    currentUser = getOfflineProfile();
+    await initializeOffline();
+    return;
+  }
+
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), 12_000);
+  try {
+    const { user } = await requestJson("/api/auth/me", { signal: controller.signal });
+    if (!user?.userId) throw new Error("KinGuardian could not verify your sign-in. Refresh the page or sign in again.");
+    if (user.mustChangePassword) {
+      location.replace("change-password.html");
+      return;
+    }
+    currentUser = user;
+    await initializeOnline();
+  } catch (error) {
+    if (error.status === 401) {
+      location.replace("login.html");
+      return;
+    }
+    if (error.code === "PASSWORD_CHANGE_REQUIRED") {
+      location.replace("change-password.html");
+      return;
+    }
+    if (!navigator.onLine) {
+      currentUser = getOfflineProfile();
+      await initializeOffline();
+      return;
+    }
+    startButton.disabled = true;
+    showMessage(message, error.name === "AbortError"
+      ? "KinGuardian did not respond while checking your sign-in. Refresh the page and try again."
+      : error.message || "KinGuardian could not verify your sign-in. Refresh the page or sign in again.");
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+}
+
 async function initializeOnline() {
   if (!currentUser?.userId) return;
   cacheOfflineProfile(currentUser);
+  startButton.disabled = false;
   try {
     await loadRecipients();
     await synchronizePending();
     await loadAlerts();
     schedulePoll();
-    startButton.disabled = repeatCooldownEndsAt > Date.now();
-    if (startButton.disabled) tickRepeatCooldown();
   } catch (error) {
     showMessage(message, error.message || "SOS is unavailable until your trusted people load.");
   }
@@ -67,8 +108,7 @@ async function initializeOffline() {
   }
   const connections = await getOfflineRecord(currentUser.userId, "connections").catch(() => []);
   renderRecipients(connections || []);
-  startButton.disabled = repeatCooldownEndsAt > Date.now();
-  if (startButton.disabled) tickRepeatCooldown();
+  startButton.disabled = false;
   const queued = await listOfflineRecords(currentUser.userId, "sos:").catch(() => []);
   const savedAlerts = await getOfflineRecord(currentUser.userId, "sos:history").catch(() => []);
   const alertNodes = [...(savedAlerts || []).map((alert) => renderAlert(alert, true)), ...queued.map((record) => renderLocalAlert(record.value))];
@@ -107,9 +147,7 @@ function selectedRecipientIds() {
   return [...recipientList.querySelectorAll('input[name="sos-recipient"]:checked')].map((input) => input.value);
 }
 
-function startCountdown(allowImmediateRepeat = false) {
-  if (repeatCooldownEndsAt > Date.now() && !allowImmediateRepeat) return;
-  if (allowImmediateRepeat) clearRepeatCooldown();
+function startCountdown() {
   if (!currentUser) currentUser = getOfflineProfile();
   if (!currentUser?.userId) {
     showMessage(message, "Sign in once on this device before sending or saving an SOS.");
@@ -212,7 +250,6 @@ async function submitPendingAlert() {
     startButton.disabled = false;
     recipientFieldset.disabled = false;
     showMessage(message, result.message || "SOS status saved by KinGuardian.", "success");
-    startRepeatCooldown();
     void freshLocationPromise.then((point) => saveLivePoint(point, activeAlertId));
     startLiveLocation(activeAlertId);
     await loadAlerts();
@@ -240,7 +277,6 @@ async function queueLocally() {
     recipientFieldset.disabled = false;
     retryButton.hidden = true;
     showMessage(message, "SOS saved on this device. Nobody has been notified yet. KinGuardian will retry after you reconnect and sign in.", "pending");
-    startRepeatCooldown();
     void freshLocationPromise.then(async (point) => {
       if (!isValidLocalPoint(point)) return;
       submission.location = point;
@@ -392,34 +428,4 @@ function formatTime(value) {
 function schedulePoll() {
   clearTimeout(pollTimer);
   if (currentUser && navigator.onLine && !document.hidden) pollTimer = window.setTimeout(async () => { await loadAlerts(); schedulePoll(); }, 30_000);
-}
-
-function startRepeatCooldown() {
-  repeatCooldownEndsAt = Date.now() + 30_000;
-  startButton.disabled = true;
-  repeatNowButton.hidden = false;
-  clearInterval(repeatCooldownTimer);
-  tickRepeatCooldown();
-  repeatCooldownTimer = window.setInterval(tickRepeatCooldown, 1000);
-}
-
-function tickRepeatCooldown() {
-  const seconds = Math.max(0, Math.ceil((repeatCooldownEndsAt - Date.now()) / 1000));
-  if (seconds === 0) {
-    clearRepeatCooldown();
-    return;
-  }
-  repeatStatus.hidden = false;
-  repeatStatus.textContent = `Repeat reminder: ${seconds} seconds. If you still need help, start another SOS now.`;
-  startButton.textContent = `SOS available again in ${seconds}s`;
-}
-
-function clearRepeatCooldown() {
-  clearInterval(repeatCooldownTimer);
-  repeatCooldownTimer = undefined;
-  repeatCooldownEndsAt = 0;
-  repeatStatus.hidden = true;
-  repeatNowButton.hidden = true;
-  startButton.disabled = false;
-  startButton.textContent = "Start SOS · 10 seconds";
 }

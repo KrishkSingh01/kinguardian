@@ -148,7 +148,7 @@ console.log(`PASS: ${manifest.application} ${manifest.version} (${manifest.relea
 async function listFiles(directory, prefix = "") {
   const files = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
-    if (entry.isDirectory() && ignoredDirectories.has(entry.name)) continue;
+    if (entry.isDirectory() && prefix === "" && ignoredDirectories.has(entry.name)) continue;
     const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
     const fullPath = path.join(directory, entry.name);
     if (entry.isDirectory()) files.push(...await listFiles(fullPath, relativePath));
