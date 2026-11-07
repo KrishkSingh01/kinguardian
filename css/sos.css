@@ -38,6 +38,8 @@
 .sos-countdown-panel .button { min-height: 36px; padding: 5px 10px; font-size: .67rem; }
 .sos-action-row { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 16px; }
 .sos-action-row .button { min-height: 45px; }
+.sos-repeat-status { margin: 0 auto 8px; color: var(--ink-muted); font-size: .72rem; text-align: center; }
+.sos-repeat-now { display: block; margin: 0 auto 12px; }
 .sos-activate-button { display: grid; width: min(72vw, 245px); height: min(72vw, 245px); place-items: center; margin: 22px auto 12px; border: 5px solid #fff; border-radius: 50%; background: var(--coral); color: #fff; box-shadow: 0 0 0 8px color-mix(in srgb, var(--coral) 22%, transparent), 0 13px 28px rgba(115, 12, 26, .24); font-size: 1.18rem; transition: transform .16s ease, box-shadow .25s ease; }
 .sos-activate-button:hover { transform: scale(1.025); background: var(--coral-hover); box-shadow: 0 0 0 12px color-mix(in srgb, var(--coral) 17%, transparent), 0 16px 34px rgba(115, 12, 26, .3); }
 .sos-activate-button:active { transform: scale(.97); }

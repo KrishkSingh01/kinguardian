@@ -41,6 +41,7 @@ test("all numbered migrations include constrained setup and pairing tables", () 
   assert.ok(tables.has("account_setup_tokens"));
   assert.ok(tables.has("device_pairing_requests"));
   assert.ok(tables.has("account_recovery_codes"));
+  assert.ok(tables.has("mobile_refresh_tokens"));
   for (const table of ["account_setup_tokens", "device_pairing_requests"]) {
     const columns = db.prepare(`PRAGMA table_info(${table})`).all().map((column) => column.name);
     assert.ok(columns.includes("token_hash"), `${table} must store token hashes`);
@@ -50,7 +51,7 @@ test("all numbered migrations include constrained setup and pairing tables", () 
     db.prepare("SELECT COUNT(*) AS count FROM sqlite_schema WHERE type = 'index' AND name = 'one_open_account_setup_token_per_purpose'").get().count,
     1,
   );
-  assert.equal(db.prepare("SELECT COUNT(*) AS count FROM sqlite_schema WHERE type = 'table'").get().count, 37);
+  assert.equal(db.prepare("SELECT COUNT(*) AS count FROM sqlite_schema WHERE type = 'table'").get().count, 38);
   assert.ok(db.prepare("PRAGMA table_info(sos_alerts)").all().some((column) => column.name === "location_time"));
   assert.ok(db.prepare("PRAGMA table_info(trusted_connection_preferences)").all()
     .some((column) => column.name === "receive_safe_journeys"));

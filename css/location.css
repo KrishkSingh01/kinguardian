@@ -40,6 +40,11 @@
 .location-footer { margin: 16px 0 0; color: var(--ink-muted); font-size: .68rem; line-height: 1.5; text-align: center; }
 @media (max-width: 680px) { .location-workspace { grid-template-columns: 1fr; }.location-history-card { grid-column: auto; } }
 @media (max-width: 460px) { .location-page { width: min(100% - 24px, 920px); padding-top: 18px; }.location-privacy { padding: 15px; }.location-privacy-mark { width: 34px; height: 34px; } }
+.safety-map-frame {
+  position: relative;
+  width: 100%;
+}
+
 .safety-map {
   width: 100%;
   min-height: 360px;
@@ -49,6 +54,27 @@
   border-radius: 18px;
   background: linear-gradient(145deg, #dce9e1, #eef1e9 52%, #d4e2d8);
 }
+
+.map-feedback {
+  position: absolute;
+  inset: 1rem auto auto 50%;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  width: min(90%, 28rem);
+  padding: 0.8rem 1rem;
+  border: 1px solid #cbd5d0;
+  border-radius: 14px;
+  background: #fffdf4f2;
+  color: #183128;
+  text-align: center;
+  box-shadow: 0 8px 24px #10271e20;
+  transform: translateX(-50%);
+}
+
+.map-feedback[hidden] { display: none; }
+.map-feedback p { margin: 0; line-height: 1.4; }
 
 .map-actions {
   display: flex;

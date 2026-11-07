@@ -20,7 +20,7 @@ const expectedTopLevelFiles = new Set([
   "_headers", "_routes.json", "change-password.html",
   "contacts.html", "dashboard.html", "emergency.html", "index.html", "invite.html", "location.html", "login.html", "register.html", "recover.html", "privacy.html",
   "manifest.webmanifest", "pair-device.html", "release-manifest.json",
-  "service-worker.js", "sos.html",
+  "service-worker.js", "sos.html", "mobile-turnstile.html",
 ]);
 
 const workspaceFiles = await listFiles(projectRoot);
@@ -148,7 +148,7 @@ console.log(`PASS: ${manifest.application} ${manifest.version} (${manifest.relea
 async function listFiles(directory, prefix = "") {
   const files = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
-    if (entry.isDirectory() && prefix === "" && ignoredDirectories.has(entry.name)) continue;
+    if (entry.isDirectory() && ignoredDirectories.has(entry.name)) continue;
     const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
     const fullPath = path.join(directory, entry.name);
     if (entry.isDirectory()) files.push(...await listFiles(fullPath, relativePath));

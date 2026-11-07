@@ -1,0 +1,5 @@
+* { box-sizing: border-box; }
+html, body { min-height: 100%; margin: 0; background: #17251f; color: #f2f7f3; font: 14px/1.45 system-ui, sans-serif; }
+main { min-height: 94px; display: grid; place-items: center; padding: 8px; }
+#turnstile-root { min-height: 76px; display: grid; place-items: center; }
+#turnstile-status { margin: 0; color: #b4c6ba; text-align: center; }

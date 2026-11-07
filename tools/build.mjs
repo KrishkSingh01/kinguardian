@@ -13,12 +13,12 @@ if (!new Set(["development", "preview", "production"]).has(releaseType)) {
 }
 const staticFiles = [
   "index.html", "dashboard.html", "login.html", "register.html", "recover.html", "change-password.html", "pair-device.html", "sos.html", "location.html", "emergency.html", "privacy.html",
-  "manifest.webmanifest", "service-worker.js", "_headers", "_routes.json",
+  "manifest.webmanifest", "service-worker.js", "mobile-turnstile.html", "_headers", "_routes.json",
 ];
 const staticDirectories = ["css", "assets"];
 const entryPoints = [
   "app", "login", "register", "recover", "recovery-codes", "change-password", "pair-device", "location", "install",
-  "notifications", "notification-center", "safe-journey", "trusted-people", "sos-activation", "network-monitor", "emergency", "map-experience",
+  "notifications", "notification-center", "safe-journey", "trusted-people", "sos-activation", "network-monitor", "emergency", "map-experience", "mobile-turnstile",
 ].map((name) => path.join(projectRoot, "js", `${name}.js`));
 
 // dist is a generated directory. Start clean so stale files cannot leak into a release.
