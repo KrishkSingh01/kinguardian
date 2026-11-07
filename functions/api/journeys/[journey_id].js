@@ -36,7 +36,7 @@ export async function onRequestPost(context) {
     const userId = session.user.user_id;
     const passwordBucket = `journey:password:${userId}`;
     if (await isRateLimited(env, passwordBucket)) {
-      return jsonResponse({ error: { code: "RATE_LIMITED", message: "Too many password checks. Wait before trying again." } }, 429);
+      return jsonResponse({ error: { code: "RATE_LIMITED", message: "Too many incorrect password checks. Wait 15 minutes before trying again. After this temporary lock clears, a correct password will stop or extend the journey immediately." } }, 429);
     }
     const [account, journey] = await Promise.all([
       env.DB.prepare(`SELECT password_algorithm, password_iterations, password_hash, password_salt

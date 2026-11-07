@@ -38,9 +38,6 @@ export async function onRequestPost(context) {
       context.env.DB.prepare(
         "UPDATE sessions SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL",
       ).bind(now, targetId),
-      context.env.DB.prepare(
-        "UPDATE mobile_refresh_tokens SET revoked_at = ? WHERE user_id = ? AND revoked_at IS NULL",
-      ).bind(now, targetId),
       context.env.DB.prepare(`
         UPDATE account_setup_tokens SET revoked_at = ?
         WHERE user_id = ? AND redeemed_at IS NULL AND revoked_at IS NULL

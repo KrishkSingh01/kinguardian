@@ -1,9 +1,8 @@
-import { createSessionCredentials } from "../../_shared/auth.js";
+import { createSessionCredentials, sessionCookies } from "../../_shared/auth.js";
 import { derivePasswordHash, normalizeUsername, PASSWORD_ITERATIONS, randomBytes, validatePassword } from "../../_shared/crypto.js";
 import { jsonResponse, readJsonRequest, requirePost, safeError } from "../../_shared/http.js";
 import { isRateLimited, recordAttempt } from "../../_shared/rate-limit.js";
 import { createRecoveryCodeSet } from "../../_shared/recovery-codes.js";
-import { createMobileRefreshCredential, insertMobileRefreshStatement, isNativeClient, mobileAuthPayload, authResponseHeaders } from "../../_shared/mobile-auth.js";
 import { turnstileFailureResponse, verifyTurnstile } from "../../_shared/turnstile.js";
 
 const ADDRESS_LIMIT = 10;
@@ -47,9 +46,6 @@ export async function onRequestPost(context) {
     const now = Date.now();
     const recovery = await createRecoveryCodeSet();
     const session = await createSessionCredentials(now);
-    const mobile = isNativeClient(request)
-      ? await createMobileRefreshCredential(session.tokenHash, now)
-      : null;
     const statements = [env.DB.prepare(`
       INSERT INTO users (
         user_id, username, role, account_status, password_algorithm,
@@ -67,25 +63,22 @@ export async function onRequestPost(context) {
     }
     statements.push(env.DB.prepare(`
       INSERT INTO sessions (session_token_hash, csrf_token_hash, user_id, created_at, expires_at, last_seen_at)
-      SELECT ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM users WHERE user_id = ? AND account_status = 'active')
+      SELECT ?, ?, ?, ?, ?, ? WHERE EXISTS (SELECT 1 FROM users WHERE user_id = ?)
     `).bind(session.tokenHash, session.csrfHash, userId, now, session.expiresAt, now, userId));
-    if (mobile) statements.push(insertMobileRefreshStatement(env.DB, userId, mobile));
 
     const inserted = await env.DB.batch(statements);
+
     if (!inserted[0]?.meta?.changes) {
       return jsonResponse({ error: { code: "USERNAME_UNAVAILABLE", message: "That username is not available. Choose another one." } }, 409);
     }
-    const recoveryEnd = 1 + recovery.records.length;
-    if (inserted.slice(1, recoveryEnd).some((result) => result?.meta?.changes !== 1)
-      || inserted[recoveryEnd]?.meta?.changes !== 1
-      || (mobile && inserted[recoveryEnd + 1]?.meta?.changes !== 1)) {
-      throw new Error("Account session or recovery data could not be saved.");
+    if (inserted.slice(1).some((result) => result?.meta?.changes !== 1)) {
+      throw new Error("Account recovery data could not be saved.");
     }
     return jsonResponse({
       user: { userId, username, role: "member", mustChangePassword: false },
-      ...mobileAuthPayload(request, session, mobile),
+      csrfToken: session.csrfToken,
       recoveryCodes: recovery.codes,
-    }, 201, authResponseHeaders(request, session));
+    }, 201, { "Set-Cookie": sessionCookies(session.token, session.csrfToken) });
   } catch (error) {
     return safeError(error);
   }

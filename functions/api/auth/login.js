@@ -1,6 +1,5 @@
-import { createSessionCredentials } from "../../_shared/auth.js";
 import { clearRateLimit, isRateLimited, recordFailure } from "../../_shared/rate-limit.js";
-import { createMobileRefreshCredential, insertMobileRefreshStatement, isNativeClient, mobileAuthPayload, authResponseHeaders } from "../../_shared/mobile-auth.js";
+import { createSession, sessionCookies } from "../../_shared/auth.js";
 import { constantTimeEqual, derivePasswordHash, normalizeUsername, PASSWORD_ITERATIONS } from "../../_shared/crypto.js";
 import { jsonResponse, readJsonRequest, requirePost, safeError } from "../../_shared/http.js";
 import { turnstileFailureResponse, verifyTurnstile } from "../../_shared/turnstile.js";
@@ -56,21 +55,7 @@ export async function onRequestPost(context) {
     }
 
     await Promise.all([clearRateLimit(env, userBucket), clearRateLimit(env, addressBucket)]);
-    const now = Date.now();
-    const session = await createSessionCredentials(now);
-    const mobile = isNativeClient(request)
-      ? await createMobileRefreshCredential(session.tokenHash, now)
-      : null;
-    const statements = [env.DB.prepare(`
-      INSERT INTO sessions (session_token_hash, csrf_token_hash, user_id, created_at, expires_at, last_seen_at)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).bind(session.tokenHash, session.csrfHash, user.user_id, now, session.expiresAt, now)];
-    if (mobile) statements.push(insertMobileRefreshStatement(env.DB, user.user_id, mobile));
-    const inserted = await env.DB.batch(statements);
-    if (inserted.some((result) => result?.meta?.changes !== 1)) {
-      throw new Error("The sign-in session could not be saved.");
-    }
-
+    const session = await createSession(env, user.user_id);
     return jsonResponse({
       user: {
         userId: user.user_id,
@@ -78,8 +63,8 @@ export async function onRequestPost(context) {
         role: user.role,
         mustChangePassword: Boolean(user.must_change_password),
       },
-      ...mobileAuthPayload(request, session, mobile),
-    }, 200, authResponseHeaders(request, session));
+      csrfToken: session.csrfToken,
+    }, 200, { "Set-Cookie": sessionCookies(session.token, session.csrfToken) });
   } catch (error) {
     return safeError(error);
   }

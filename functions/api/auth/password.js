@@ -46,10 +46,6 @@ export async function onRequestPost(context) {
         WHERE user_id = ? AND session_token_hash <> ? AND revoked_at IS NULL
       `).bind(now, session.user.user_id, session.tokenHash),
       context.env.DB.prepare(`
-        UPDATE mobile_refresh_tokens SET revoked_at = ?
-        WHERE user_id = ? AND session_token_hash <> ? AND revoked_at IS NULL
-      `).bind(now, session.user.user_id, session.tokenHash),
-      context.env.DB.prepare(`
         INSERT INTO notification_events (
           event_id, event_key, user_id, category, delivery_status, created_at, updated_at
         ) SELECT ?, ?, user_id, 'account_security', 'prepared', ?, ?

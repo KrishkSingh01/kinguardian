@@ -5,9 +5,6 @@ const SESSION_COOKIE = "__Host-kg_session";
 const CSRF_COOKIE = "__Host-kg_csrf";
 const SESSION_DURATION_MS = 14 * 24 * 60 * 60 * 1000;
 const LAST_SEEN_INTERVAL_MS = 15 * 60 * 1000;
-const NATIVE_CLIENT_HEADER = "x-kg-client";
-const NATIVE_CLIENT_VALUE = "native";
-const BEARER_PATTERN = /^Bearer ([A-Za-z0-9_-]{43})$/u;
 
 export function passwordCookie(token) {
   return `${SESSION_COOKIE}=${token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${SESSION_DURATION_MS / 1000}`;
@@ -50,12 +47,12 @@ function readCookie(request, wantedName) {
   return null;
 }
 
-function readSessionCredential(request) {
-  if (request.headers.get(NATIVE_CLIENT_HEADER) === NATIVE_CLIENT_VALUE) {
-    const match = BEARER_PATTERN.exec(request.headers.get("authorization") || "");
-    return { token: match?.[1] || null, mode: "native" };
+function readSessionToken(request) {
+  if (request.headers.get("x-kg-client") === "native") {
+    const bearer = /^Bearer\s+(.+)$/iu.exec(request.headers.get("authorization") || "");
+    if (bearer) return bearer[1].trim();
   }
-  return { token: readCookie(request, SESSION_COOKIE), mode: "cookie" };
+  return readCookie(request, SESSION_COOKIE);
 }
 
 export async function createSession(env, userId, now = Date.now()) {
@@ -68,8 +65,9 @@ export async function createSession(env, userId, now = Date.now()) {
 }
 
 export async function requireSession(context, { write = false, allowPasswordChange = false } = {}) {
-  const credential = readSessionCredential(context.request);
-  const token = credential.token;
+  const nativeBearer = context.request.headers.get("x-kg-client") === "native"
+    && /^Bearer\s+\S+$/iu.test(context.request.headers.get("authorization") || "");
+  const token = readSessionToken(context.request);
   if (!token || token.length > 100) {
     return { response: errorResponse("AUTH_REQUIRED", 401, "Sign in to continue.") };
   }
@@ -93,7 +91,7 @@ export async function requireSession(context, { write = false, allowPasswordChan
   if (user.must_change_password && !allowPasswordChange) {
     return { response: errorResponse("PASSWORD_CHANGE_REQUIRED", 403, "Change your temporary password to continue.") };
   }
-  if (write && credential.mode === "cookie") {
+  if (write && !nativeBearer) {
     const origin = context.request.headers.get("origin");
     let sameOrigin = false;
     try { sameOrigin = Boolean(origin && origin === new URL(context.request.url).origin); } catch { /* reject below */ }
@@ -118,5 +116,5 @@ export async function requireSession(context, { write = false, allowPasswordChan
     `).bind(now, tokenHash).run();
   }
 
-  return { user, tokenHash, mode: credential.mode };
+  return { user, tokenHash, mode: nativeBearer ? "native" : "browser" };
 }

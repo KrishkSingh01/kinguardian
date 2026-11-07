@@ -68,11 +68,6 @@ export async function onRequestPost(context) {
           AND EXISTS (SELECT 1 FROM users WHERE user_id = ? AND password_changed_at = ? AND password_hash = ?)
       `).bind(now, user.user_id, user.user_id, now, passwordHash),
       env.DB.prepare(`
-        UPDATE mobile_refresh_tokens SET revoked_at = ?
-        WHERE user_id = ? AND revoked_at IS NULL
-          AND EXISTS (SELECT 1 FROM users WHERE user_id = ? AND password_changed_at = ? AND password_hash = ?)
-      `).bind(now, user.user_id, user.user_id, now, passwordHash),
-      env.DB.prepare(`
         UPDATE account_setup_tokens SET revoked_at = ?
         WHERE user_id = ? AND revoked_at IS NULL AND redeemed_at IS NULL
           AND EXISTS (SELECT 1 FROM users WHERE user_id = ? AND password_changed_at = ? AND password_hash = ?)
